@@ -1,0 +1,502 @@
+/*
+ * Graph module styles: React Flow theming with the design tokens, diagram boxes, edges, groups,
+ * lifelines, thumbnails and the conversation map. Imported by the graph components.
+ * Colors come from the tokens in styles.css or from the kind hue system (--kind-h / --kind-c).
+ */
+
+/* ---------------------------------------------------------------------------------------------
+ * React Flow theme
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-flow {
+  --cs-edge: color-mix(in oklab, var(--muted) 66%, var(--canvas));
+  --cs-edge-strong: color-mix(in oklab, var(--fg) 70%, var(--canvas));
+  --cs-edge-active: var(--accent);
+  --xy-background-color: var(--canvas);
+  --xy-background-pattern-color: var(--canvas-dot);
+  --xy-edge-stroke: var(--cs-edge);
+  --xy-edge-stroke-selected: var(--accent);
+  --xy-selection-background-color: color-mix(in oklab, var(--accent) 8%, transparent);
+  --xy-selection-border: 1px solid color-mix(in oklab, var(--accent) 50%, transparent);
+  --xy-minimap-background-color: var(--surface);
+  --xy-minimap-mask-background-color: color-mix(in oklab, var(--canvas) 70%, transparent);
+  --xy-minimap-mask-stroke-color: var(--border-strong);
+  --xy-minimap-mask-stroke-width: 1;
+  --xy-minimap-node-background-color: var(--surface-3);
+  --xy-attribution-background-color: transparent;
+  --xy-node-border-radius: 10px;
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+.cs-flow .react-flow__handle {
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cs-flow .react-flow__node {
+  transition: opacity 160ms ease;
+}
+.cs-flow .react-flow__node.cs-dim {
+  opacity: 0.3;
+}
+.cs-flow .react-flow__node:focus-visible {
+  outline: none;
+}
+
+/* Viewport transitions when node positions change (direction switch). */
+.cs-flow.cs-animate .react-flow__node {
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 160ms ease;
+}
+
+.cs-flow .react-flow__minimap {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cs-flow .react-flow__panel {
+  margin: 12px;
+}
+
+.cs-flow .react-flow__edgelabel-renderer {
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Diagram box
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-node {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.cs-node:hover {
+  border-color: oklch(0.7 calc(0.13 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+.dark .cs-node:hover {
+  border-color: oklch(0.56 calc(0.11 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+
+.cs-node.is-highlight {
+  border-color: oklch(0.66 calc(0.15 * var(--kind-c, 1)) var(--kind-h, 260));
+  box-shadow:
+    0 0 0 1px oklch(0.66 calc(0.15 * var(--kind-c, 1)) var(--kind-h, 260)),
+    0 6px 22px -6px oklch(0.62 calc(0.16 * var(--kind-c, 1)) var(--kind-h, 260) / 0.55),
+    var(--shadow);
+}
+.dark .cs-node.is-highlight {
+  border-color: oklch(0.66 calc(0.13 * var(--kind-c, 1)) var(--kind-h, 260));
+  box-shadow:
+    0 0 0 1px oklch(0.66 calc(0.13 * var(--kind-c, 1)) var(--kind-h, 260)),
+    0 8px 28px -6px oklch(0.6 calc(0.15 * var(--kind-c, 1)) var(--kind-h, 260) / 0.5),
+    var(--shadow);
+}
+
+.cs-node.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.cs-node.is-pending {
+  animation: cs-pulse 1.6s ease-in-out infinite;
+}
+
+.cs-kind-icon {
+  background-color: oklch(0.93 calc(0.055 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+.dark .cs-kind-icon {
+  background-color: oklch(0.33 calc(0.06 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+
+.cs-node-label {
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.cs-node-detail {
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.cs-chip {
+  background-color: color-mix(in oklab, var(--surface) 72%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+}
+.cs-chip:hover {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
+  background-color: var(--surface);
+}
+
+/* fill-mode backwards: hidden during the delay, but the end state is not retained (so state
+   classes like .is-dim can still change opacity afterwards). */
+.cs-enter {
+  animation: cs-pop 240ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: var(--cs-delay, 0ms);
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Groups and lifelines
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-group {
+  width: 100%;
+  height: 100%;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 14px;
+  background-color: color-mix(in oklab, var(--surface-2) 45%, transparent);
+}
+.dark .cs-group {
+  background-color: color-mix(in oklab, var(--surface) 55%, transparent);
+}
+
+.cs-lifeline {
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(to bottom, var(--border-strong) 55%, transparent 55%);
+  background-size: 2px 9px;
+  background-repeat: repeat-y;
+  background-position: center top;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Edges
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-edge-path {
+  fill: none;
+  stroke: var(--cs-edge);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition:
+    stroke 140ms ease,
+    opacity 160ms ease,
+    stroke-width 140ms ease;
+}
+.cs-edge-arrow {
+  fill: var(--cs-edge);
+  transition:
+    fill 140ms ease,
+    opacity 160ms ease;
+}
+.cs-edge-hit {
+  fill: none;
+  stroke: transparent;
+  pointer-events: stroke;
+}
+
+.cs-edge-group:hover .cs-edge-path,
+.cs-edge-group.is-active .cs-edge-path {
+  stroke: var(--cs-edge-strong);
+}
+.cs-edge-group:hover .cs-edge-arrow,
+.cs-edge-group.is-active .cs-edge-arrow {
+  fill: var(--cs-edge-strong);
+}
+.cs-edge-group.is-selected .cs-edge-path {
+  stroke: var(--cs-edge-active);
+}
+.cs-edge-group.is-selected .cs-edge-arrow {
+  fill: var(--cs-edge-active);
+}
+.cs-edge-group.is-dim .cs-edge-path,
+.cs-edge-group.is-dim .cs-edge-arrow {
+  opacity: 0.22;
+}
+
+.cs-edge-animated {
+  animation: cs-dash 0.9s linear infinite;
+}
+
+.cs-edge-fade {
+  animation: cs-fade 280ms ease-out backwards;
+  animation-delay: var(--cs-delay, 0ms);
+}
+
+.cs-edge-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  pointer-events: all;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  transition:
+    opacity 160ms ease,
+    color 140ms ease,
+    border-color 140ms ease;
+}
+.cs-edge-label.has-step {
+  padding-left: 3px;
+}
+.cs-edge-label.step-only {
+  justify-content: center;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.cs-edge-label:hover,
+.cs-edge-label.is-active {
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+.cs-edge-label.is-selected {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
+}
+.cs-edge-label.is-dim {
+  opacity: 0.25;
+}
+
+.cs-step {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.cs-edge-label.step-only .cs-step {
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  box-shadow: 0 0 0 2px var(--canvas);
+}
+.cs-edge-label.is-selected .cs-step {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Thumbnails (SVG)
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-thumb-box {
+  fill: oklch(0.955 calc(0.045 * var(--kind-c, 1)) var(--kind-h, 260));
+  stroke: oklch(0.78 calc(0.1 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+.dark .cs-thumb-box {
+  fill: oklch(0.3 calc(0.045 * var(--kind-c, 1)) var(--kind-h, 260));
+  stroke: oklch(0.48 calc(0.08 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+.cs-thumb-bar {
+  fill: oklch(0.55 calc(0.14 * var(--kind-c, 1)) var(--kind-h, 260) / 0.55);
+}
+.dark .cs-thumb-bar {
+  fill: oklch(0.78 calc(0.12 * var(--kind-c, 1)) var(--kind-h, 260) / 0.55);
+}
+.cs-thumb-box.is-highlight {
+  stroke: oklch(0.6 calc(0.16 * var(--kind-c, 1)) var(--kind-h, 260));
+}
+.cs-thumb-box.is-marked {
+  stroke: var(--accent);
+}
+.cs-thumb-box.is-focus {
+  stroke: var(--accent);
+  fill: var(--accent-soft);
+}
+.cs-thumb-edge {
+  fill: none;
+  stroke: color-mix(in oklab, var(--muted) 45%, transparent);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.cs-thumb-group {
+  fill: color-mix(in oklab, var(--surface-3) 35%, transparent);
+  stroke: var(--border-strong);
+  stroke-dasharray: 2 2;
+}
+.cs-thumb-lifeline {
+  stroke: var(--border-strong);
+  stroke-dasharray: 2 2;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Conversation map
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-card {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    opacity 180ms ease;
+}
+.cs-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-lg);
+}
+.cs-card.is-current {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent),
+    var(--shadow);
+}
+.cs-card.is-error {
+  border-color: color-mix(in oklab, var(--danger) 45%, var(--border));
+}
+.cs-card.is-dim {
+  opacity: 0.32;
+}
+
+.cs-card-thumb {
+  border-radius: 8px;
+  background-color: var(--canvas);
+  background-image: radial-gradient(var(--canvas-dot) 0.8px, transparent 0.8px);
+  background-size: 10px 10px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.cs-skeleton {
+  background: linear-gradient(
+    100deg,
+    var(--surface-2) 30%,
+    color-mix(in oklab, var(--surface-3) 70%, var(--surface-2)) 50%,
+    var(--surface-2) 70%
+  );
+  background-size: 200% 100%;
+  animation: cs-shimmer 1.4s ease-in-out infinite;
+}
+
+.cs-map-edge {
+  fill: none;
+  stroke-linecap: round;
+  transition: opacity 160ms ease;
+}
+.cs-map-edge-halo {
+  fill: none;
+  stroke: var(--surface);
+  stroke-linecap: round;
+}
+.cs-map-edge-group.is-dim {
+  opacity: 0.25;
+}
+.cs-map-label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 150px;
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.cs-map-label.is-dim {
+  opacity: 0.3;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Animations
+ * ------------------------------------------------------------------------------------------- */
+
+@keyframes cs-pop {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cs-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cs-dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+@keyframes cs-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@keyframes cs-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-flow .react-flow__node,
+  .cs-node,
+  .cs-card,
+  .cs-edge-path,
+  .cs-edge-arrow,
+  .cs-edge-label {
+    transition: none !important;
+  }
+  .cs-enter,
+  .cs-edge-fade,
+  .cs-edge-animated,
+  .cs-skeleton,
+  .cs-node.is-pending {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,210 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens. Use them through the Tailwind colors below (bg-surface, text-muted, border-border,
+ * bg-accent, text-danger ...). Never hard-code colors in components, so light/dark both work.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-3: #e5e8ed;
+  --border: #dde1e7;
+  --border-strong: #c3c9d3;
+  --fg: #121826;
+  --muted: #5d6878;
+  --subtle: #8a94a3;
+  --accent: #5b5bd6;
+  --accent-hover: #4a4ac4;
+  --accent-soft: #ebebfc;
+  --accent-fg: #ffffff;
+  --danger: #d23f3f;
+  --danger-soft: #fdeceb;
+  --ok: #1d9a55;
+  --ok-soft: #e5f5ec;
+  --warn: #c07a12;
+  --warn-soft: #fcf2df;
+  --canvas: #f8f9fb;
+  --canvas-dot: #d5d9e0;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.08);
+  --shadow-lg: 0 12px 32px rgb(16 24 40 / 0.16), 0 2px 6px rgb(16 24 40 / 0.08);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0c1016;
+  --surface: #141a23;
+  --surface-2: #1a212c;
+  --surface-3: #222b38;
+  --border: #273142;
+  --border-strong: #37435a;
+  --fg: #e5e8ee;
+  --muted: #9aa4b4;
+  --subtle: #6d798b;
+  --accent: #8c8df8;
+  --accent-hover: #a3a4fb;
+  --accent-soft: #24254a;
+  --accent-fg: #0c1016;
+  --danger: #f07171;
+  --danger-soft: #3a1c21;
+  --ok: #4cc38a;
+  --ok-soft: #153126;
+  --warn: #e2a641;
+  --warn-soft: #382a13;
+  --canvas: #0e131a;
+  --canvas-dot: #253040;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.55);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-canvas: var(--canvas);
+  --color-canvas-dot: var(--canvas-dot);
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', SFMono-Regular, Menlo, Consolas,
+    monospace;
+  --animate-fade-in: fade-in 120ms ease-out;
+  --animate-pop-in: pop-in 140ms ease-out;
+  --animate-pulse-soft: pulse-soft 1.6s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+
+/*
+ * Per-kind colors. Set --kind-h (hue) and --kind-c (chroma factor) with kindStyle(kind) from
+ * src/graph/visuals.ts, then use these classes.
+ */
+@layer components {
+  .kind-tint {
+    background-color: oklch(0.975 calc(0.03 * var(--kind-c, 1)) var(--kind-h, 260));
+    border-color: oklch(0.82 calc(0.09 * var(--kind-c, 1)) var(--kind-h, 260));
+  }
+  .dark .kind-tint {
+    background-color: oklch(0.255 calc(0.035 * var(--kind-c, 1)) var(--kind-h, 260));
+    border-color: oklch(0.44 calc(0.08 * var(--kind-c, 1)) var(--kind-h, 260));
+  }
+  .kind-fg {
+    color: oklch(0.52 calc(0.17 * var(--kind-c, 1)) var(--kind-h, 260));
+  }
+  .dark .kind-fg {
+    color: oklch(0.8 calc(0.13 * var(--kind-c, 1)) var(--kind-h, 260));
+  }
+  .kind-solid {
+    background-color: oklch(0.62 calc(0.16 * var(--kind-c, 1)) var(--kind-h, 260));
+  }
+  .kind-border {
+    border-color: oklch(0.62 calc(0.16 * var(--kind-c, 1)) var(--kind-h, 260));
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background-color: color-mix(in oklab, var(--accent) 30%, transparent);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+}
+
+/* ---- App shell additions ------------------------------------------------------------------ */
+
+/* Command palette (cmdk) group headings. */
+@layer components {
+  [cmdk-group-heading] {
+    padding: 0.5rem 0.5rem 0.25rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--subtle);
+    user-select: none;
+  }
+  [cmdk-group] + [cmdk-group] {
+    margin-top: 0.25rem;
+  }
+}
+
+@layer base {
+  /* Respect reduced motion (spinners keep turning so progress stays visible). */
+  @media (prefers-reduced-motion: reduce) {
+    *:not(.animate-spin),
+    *:not(.animate-spin)::before,
+    *:not(.animate-spin)::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

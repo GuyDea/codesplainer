@@ -1,0 +1,32 @@
+{
+  "name": "@codesplainer/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Codesplainer local server: workspaces, conversations, file access and agent CLI orchestration.",
+  "type": "module",
+  "bin": {
+    "codesplainer": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts --no-open",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@codesplainer/shared": "*",
+    "@fastify/static": "10.1.5",
+    "cross-spawn": "7.0.6",
+    "fastify": "5.12.5",
+    "ignore": "7.0.10",
+    "nanoid": "6.0.1",
+    "open": "11.0.4",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/cross-spawn": "6.0.6",
+    "tsup": "8.5.1",
+    "tsx": "4.23.15"
+  }
+}

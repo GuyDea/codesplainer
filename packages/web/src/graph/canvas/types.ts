@@ -32,8 +32,10 @@ export type DiagramEdgeData = {
   label?: Rect;
   /** Emphasized (touches the hovered or selected box). */
   active: boolean;
-  /** De-emphasized (hover focus on another part of the diagram). */
+  /** De-emphasized (hover focus elsewhere, or a step the player has not reached yet). */
   dim: boolean;
+  /** Part of the step player's current step. */
+  current: boolean;
   delay: number;
   layoutKey: string;
 };

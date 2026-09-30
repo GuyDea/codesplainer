@@ -10,6 +10,7 @@ import { isAbsolute } from 'node:path';
 import {
   toPosixPath,
   type CodeRef,
+  type GraphEdge,
   type GraphSpec,
   type Workspace,
   type WorkspaceFolder,
@@ -175,32 +176,47 @@ export function normalizedRef(ref: CodeRef, target: ResolvedRef): CodeRef {
 const refKey = (r: CodeRef) =>
   `${r.folder ?? ''}|${r.path}|${r.startLine ?? ''}|${r.endLine ?? ''}`;
 
-/** Validate and normalize every node ref of a diagram. Returns a new spec. */
+/**
+ * Validate and normalize every ref of a diagram (boxes and arrows). Returns a new spec; arrows
+ * whose refs all point to missing files lose their `refs`.
+ */
 export async function resolveSpecRefs(
   spec: GraphSpec,
   workspace: Workspace,
 ): Promise<{ spec: GraphSpec; warnings: string[] }> {
   const resolver = new RefResolver(workspace);
   let removed = 0;
-  const nodes = await Promise.all(
-    spec.nodes.map(async (node) => {
-      const refs: CodeRef[] = [];
-      const seen = new Set<string>();
-      for (const ref of node.refs) {
-        const target = await resolver.resolve(ref);
-        if (!target) {
-          removed++;
-          continue;
-        }
-        const fixed = normalizedRef(ref, target);
-        const key = refKey(fixed);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        refs.push(fixed);
+  /** The refs that exist, canonical and deduplicated. */
+  const check = async (list: CodeRef[]): Promise<CodeRef[]> => {
+    const refs: CodeRef[] = [];
+    const seen = new Set<string>();
+    for (const ref of list) {
+      const target = await resolver.resolve(ref);
+      if (!target) {
+        removed++;
+        continue;
       }
-      return { ...node, refs };
+      const fixed = normalizedRef(ref, target);
+      const key = refKey(fixed);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      refs.push(fixed);
+    }
+    return refs;
+  };
+  const nodes = await Promise.all(
+    spec.nodes.map(async (node) => ({ ...node, refs: await check(node.refs) })),
+  );
+  const edges = await Promise.all(
+    spec.edges.map(async (edge) => {
+      const copy: GraphEdge = { ...edge };
+      if (!edge.refs) return copy;
+      const refs = await check(edge.refs);
+      if (refs.length) copy.refs = refs;
+      else delete copy.refs;
+      return copy;
     }),
   );
   const warnings = removed > 0 ? [`Removed ${removed} reference(s) to missing files`] : [];
-  return { spec: { ...structuredClone(spec), nodes }, warnings };
+  return { spec: { ...structuredClone(spec), nodes, edges }, warnings };
 }

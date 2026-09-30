@@ -15,6 +15,7 @@ import {
   neighbours,
   relationLabel,
   type CodeRef,
+  type GraphEdge,
   type GraphEntry,
   type GraphNode,
   type GraphSpec,
@@ -87,8 +88,30 @@ const EXAMPLE = JSON.stringify({
     },
   ],
   edges: [
-    { from: 'checkout-api', to: 'order-service', label: 'places order', kind: 'call', step: null },
-    { from: 'order-service', to: 'postgres', label: 'inserts', kind: 'write', step: null },
+    {
+      from: 'checkout-api',
+      to: 'order-service',
+      label: 'places order',
+      kind: 'call',
+      step: null,
+      refs: [
+        {
+          folder: 'shop',
+          path: 'src/api/checkout.ts',
+          startLine: 41,
+          endLine: 41,
+          symbol: 'placeOrder',
+        },
+      ],
+    },
+    {
+      from: 'order-service',
+      to: 'postgres',
+      label: 'inserts',
+      kind: 'write',
+      step: null,
+      refs: [],
+    },
   ],
   groups: [],
   suggestions: ['How is the cart validated?', 'Where are payments handled?'],
@@ -127,12 +150,13 @@ function buildSystemPrompt(): string {
     `Node kinds: ${vocabulary(NODE_KINDS, NODE_KIND_INFO)}.`,
     `Edge kinds: ${vocabulary(EDGE_KINDS, EDGE_KIND_INFO)}.`,
     '',
-    '## Refs (where a box lives in the code)',
+    '## Refs (where boxes and arrows live in the code)',
     '- folder: a workspace folder alias from the task. path: relative to that folder\'s root, forward slashes; "" is the folder root.',
     '- Boxes for folders, modules, services and whole files: the path only (startLine/endLine null); folders and modules may point to a directory.',
     '- Code-level boxes (function, class, step, decision): startLine and endLine from line numbers your tools showed (search results include them); never estimate.',
     '- Only paths you saw in the tree or opened; never guess. If unsure, use refs: []. Actors and external systems usually have none.',
     '- symbol: the function/class name when the box is one symbol, else null.',
+    '- Arrows: refs point to the line where the relationship happens: the call, import, emit/subscribe, read or write (startLine = endLine for one line; symbol: the called function, or null). Code-level diagrams (inside a file or function) should have them. For arrows between folders or services one representative line is optional; do not search just to find one.',
     '',
     '## Exploring (read-only)',
     '- Never create, modify, move or delete files. Never run builds, tests, installs, git commands or network requests.',
@@ -288,7 +312,7 @@ function describeSpec(spec: GraphSpec, heading: string): string[] {
     lines.push('Arrows:');
     for (const e of spec.edges) {
       lines.push(
-        `- ${e.from} → ${e.to}${e.label ? `: ${e.label}` : ''} (${e.kind}${e.step ? `, step ${e.step}` : ''})`,
+        `- ${e.from} → ${e.to}${e.label ? `: ${e.label}` : ''} (${e.kind}${e.step ? `, step ${e.step}` : ''})${e.refs?.length ? ` | ${refsText(e.refs)}` : ''}`,
       );
     }
   }
@@ -313,14 +337,15 @@ function boxLines(
   if (spec) {
     const label = (id: string) => findNode(spec, id)?.label ?? id;
     const { incoming, outgoing } = neighbours(spec, node.id);
+    const site = (e: GraphEdge) => (e.refs?.length ? ` at ${refsText(e.refs)}` : '');
     if (incoming.length) {
       lines.push(
-        `Incoming: ${incoming.map((e) => `${label(e.from)}${e.label ? ` (${e.label})` : ''}`).join('; ')}`,
+        `Incoming: ${incoming.map((e) => `${label(e.from)}${e.label ? ` (${e.label})` : ''}${site(e)}`).join('; ')}`,
       );
     }
     if (outgoing.length) {
       lines.push(
-        `Outgoing: ${outgoing.map((e) => `${label(e.to)}${e.label ? ` (${e.label})` : ''}`).join('; ')}`,
+        `Outgoing: ${outgoing.map((e) => `${label(e.to)}${e.label ? ` (${e.label})` : ''}${site(e)}`).join('; ')}`,
       );
     }
   }

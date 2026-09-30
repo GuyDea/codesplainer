@@ -42,6 +42,7 @@ import {
   setDiagramStar,
   setLegendVisible,
   setSidebarOpen,
+  showDiagramStep,
   showRawOutput,
   submitAsk,
   toggleActivityPanel,
@@ -223,6 +224,7 @@ function DiagramArea({
             void openCode(ref, { context: { graphId: graph.id, nodeId: nodeIdForRef(spec, ref) } })
           }
           onOpenChild={openGraph}
+          onStep={(step) => showDiagramStep(graph.id, step)}
           nodeChildren={nodeChildren}
           multiFolder={multiFolder}
           className="h-full w-full"

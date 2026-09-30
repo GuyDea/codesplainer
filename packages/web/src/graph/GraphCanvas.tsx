@@ -26,7 +26,7 @@ import {
   type NodeTypes,
   type Viewport,
 } from '@xyflow/react';
-import { Copy, CodeXml, Maximize2, MessageSquare } from 'lucide-react';
+import { Copy, CodeXml, Maximize2, MessageSquare, StepForward } from 'lucide-react';
 import {
   defaultDirection,
   NODE_KIND_INFO,
@@ -35,19 +35,21 @@ import {
   type GraphSpec,
 } from '@codesplainer/shared';
 import { cn } from '../lib/cn';
-import { Spinner, type MenuItem } from '../ui';
+import { IconButton, Spinner, type MenuItem } from '../ui';
 import { CanvasControls } from './canvas/CanvasControls';
 import { CanvasContext, type CanvasContextValue } from './canvas/context';
 import { exportFlowImage } from './canvas/export';
 import { motion } from './canvas/motion';
 import { ARROW_KEYS, isInteractiveTarget, nearestInDirection, startBox } from './canvas/keyboard';
+import { StepPlayer } from './canvas/StepPlayer';
 import type { CanvasNode, DiagramFlowEdge, DiagramFlowNode } from './canvas/types';
 import { ContextMenu } from './ContextMenu';
 import { DiagramEdge } from './edges/DiagramEdge';
-import { layoutGraph, peekGraphLayout, type GraphLayout, type Rect } from './layout';
+import { layoutGraph, peekGraphLayout, type GraphLayout, type Point, type Rect } from './layout';
 import { DiagramNode } from './nodes/DiagramNode';
 import { GroupNode, LifelineNode } from './nodes/GroupNode';
 import { sequenceLayout, type SequenceLayout } from './sequence';
+import { diagramSteps, stepCaption, stepCode, type DiagramStep } from './steps';
 import type { GraphCanvasProps, NodeChildInfo } from './types';
 import { NODE_VISUALS } from './visuals';
 
@@ -229,18 +231,28 @@ function GraphCanvasInner(props: GraphCanvasProps) {
   const userMoved = useRef(false);
   const moveStart = useRef<Viewport | null>(null);
   const fittedKey = useRef<string | null>(null);
+  /** Step player position (null: stopped). It belongs to one diagram. */
+  const [player, setPlayer] = useState<{ graphId: string; index: number } | null>(null);
+  /** The player's "show each step's code" switch. */
+  const [followCode, setFollowCode] = useState(true);
+  /** Image export in progress: draw the plain diagram (no step emphasis). */
+  const [exporting, setExporting] = useState(false);
+  // Another diagram stops the player (adjusted while rendering rather than in an effect).
+  if (player && player.graphId !== graphId) setPlayer(null);
 
+  // Clear the other kind of selection first: a controlled owner may reset both on a null (the
+  // app store does), which would otherwise wipe the selection that was just made.
   const selectNode = useCallback(
     (id: string | null) => {
-      if (id !== selectedNodeId) setSelectedNode(id);
       if (id && selectedEdgeId) setSelectedEdge(null);
+      if (id !== selectedNodeId) setSelectedNode(id);
     },
     [selectedNodeId, selectedEdgeId, setSelectedNode, setSelectedEdge],
   );
   const selectEdge = useCallback(
     (id: string | null) => {
-      if (id !== selectedEdgeId) setSelectedEdge(id);
       if (id && selectedNodeId) setSelectedNode(null);
+      if (id !== selectedEdgeId) setSelectedEdge(id);
     },
     [selectedNodeId, selectedEdgeId, setSelectedNode, setSelectedEdge],
   );
@@ -286,6 +298,41 @@ function GraphCanvasInner(props: GraphCanvasProps) {
     return set;
   }, [hovered, model]);
 
+  const steps = useMemo(() => (model ? diagramSteps(model.spec) : []), [model]);
+  const hasStepCode = useMemo(
+    () => (model ? steps.some((s) => stepCode(model.spec, s) !== undefined) : false),
+    [model, steps],
+  );
+  const stepIndex =
+    player && player.graphId === graphId && model?.graphId === graphId && steps.length
+      ? Math.min(player.index, steps.length - 1)
+      : null;
+  const currentStep = stepIndex !== null ? steps[stepIndex] : undefined;
+  const caption = model && currentStep ? stepCaption(model.spec, currentStep) : '';
+
+  /**
+   * Step player emphasis (replaces hover focus while playing): the current step, the trail of
+   * steps before it, and the boxes they touch. Everything not reached yet is dimmed.
+   */
+  const stepView = useMemo(() => {
+    if (stepIndex === null || !model || exporting) return null;
+    const currentEdges = new Set(steps[stepIndex]?.edgeIds ?? []);
+    const pastEdges = new Set(steps.slice(0, stepIndex).flatMap((s) => s.edgeIds));
+    const currentNodes = new Set<string>();
+    const reached = new Set<string>();
+    for (const e of model.spec.edges) {
+      const isCurrent = currentEdges.has(e.id);
+      if (!isCurrent && !pastEdges.has(e.id)) continue;
+      reached.add(e.from);
+      reached.add(e.to);
+      if (isCurrent) {
+        currentNodes.add(e.from);
+        currentNodes.add(e.to);
+      }
+    }
+    return { currentEdges, pastEdges, currentNodes, reached };
+  }, [stepIndex, steps, model, exporting]);
+
   const boxes = useMemo<(Rect & { id: string; highlight?: boolean })[]>(() => {
     if (!model) return [];
     const rects: Record<string, Rect> = model.layout?.nodes ?? model.sequence?.participants ?? {};
@@ -310,6 +357,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
         position: { x: g.x, y: g.y },
         width: g.width,
         height: g.height,
+        measured: { width: g.width, height: g.height },
         data: { label: g.label, delay: delayOf(g), layoutKey: key },
         selectable: false,
         focusable: false,
@@ -325,6 +373,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
         position: { x: line.x - 1, y: line.top },
         width: 2,
         height: Math.max(1, line.bottom - line.top),
+        measured: { width: 2, height: Math.max(1, line.bottom - line.top) },
         data: { delay: 60, layoutKey: key },
         selectable: false,
         focusable: false,
@@ -344,6 +393,10 @@ function GraphCanvasInner(props: GraphCanvasProps) {
         position: { x: box.x, y: box.y },
         width: box.width,
         height: box.height,
+        // Sizes are known from the layout. Without `measured`, React Flow drops a node's handle
+        // bounds whenever the node object changes (hover, selection, step player), which
+        // unmounts every edge until the next measurement and replays their enter animation.
+        measured: { width: box.width, height: box.height },
         data: {
           node,
           labelLines: box.labelLines,
@@ -355,11 +408,19 @@ function GraphCanvasInner(props: GraphCanvasProps) {
         selected: node.id === selectedNodeId,
         draggable: false,
         ariaLabel: `${node.label} (${NODE_KIND_INFO[node.kind].label})`,
-        className: focus && !focus.has(node.id) ? 'cs-dim' : undefined,
+        className: stepView
+          ? stepView.currentNodes.has(node.id)
+            ? 'cs-step-node'
+            : stepView.reached.has(node.id)
+              ? undefined
+              : 'cs-dim'
+          : focus && !focus.has(node.id)
+            ? 'cs-dim'
+            : undefined,
       });
     }
     return out;
-  }, [model, nodeChildren, selectedNodeId, focus]);
+  }, [model, nodeChildren, selectedNodeId, focus, stepView]);
 
   const edges = useMemo<DiagramFlowEdge[]>(() => {
     if (!model) return [];
@@ -384,6 +445,8 @@ function GraphCanvasInner(props: GraphCanvasProps) {
       const edge = item.edge;
       if (!edge || !nodeById.has(edge.from) || !nodeById.has(edge.to)) continue;
       const touches = anchor ? edge.from === anchor || edge.to === anchor : false;
+      const current = stepView?.currentEdges.has(edge.id) ?? false;
+      const reached = current || (stepView?.pastEdges.has(edge.id) ?? false);
       out.push({
         id: edge.id,
         source: edge.from,
@@ -394,8 +457,9 @@ function GraphCanvasInner(props: GraphCanvasProps) {
           edge,
           points: item.points,
           label: item.label,
-          active: touches,
-          dim: hovered ? !touches : false,
+          active: stepView ? false : touches,
+          dim: stepView ? !reached : hovered ? !touches : false,
+          current,
           delay: item.delay,
           layoutKey: key,
         },
@@ -403,7 +467,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
       });
     }
     return out;
-  }, [model, nodeById, hovered, selectedNodeId, selectedEdgeId]);
+  }, [model, nodeById, hovered, selectedNodeId, selectedEdgeId, stepView]);
 
   // ---- viewport -----------------------------------------------------------------------------
 
@@ -458,35 +522,151 @@ function GraphCanvasInner(props: GraphCanvasProps) {
     [rf, selectNode],
   );
 
-  /** Pan (without zooming) so a box is fully visible. */
-  const revealNode = useCallback(
-    (id: string) => {
-      const node = rf.getNode(id);
+  /**
+   * Pan (without zooming) so a flow-space rectangle is fully visible; zoom out only when it is
+   * larger than the viewport.
+   */
+  const revealRect = useCallback(
+    (r: Rect) => {
       const el = wrapperRef.current;
-      if (!node || !el) return;
+      if (!el) return;
       const { x, y, zoom } = rf.getViewport();
-      const w = (node.width ?? 0) * zoom;
-      const h = (node.height ?? 0) * zoom;
-      const sx = node.position.x * zoom + x;
-      const sy = node.position.y * zoom + y;
+      const w = r.width * zoom;
+      const h = r.height * zoom;
+      const sx = r.x * zoom + x;
+      const sy = r.y * zoom + y;
       const margin = 48;
       const outside =
         sx < margin ||
         sy < margin ||
         sx + w > el.clientWidth - margin ||
         sy + h > el.clientHeight - margin;
-      if (outside) {
-        void rf.setCenter(
-          node.position.x + (node.width ?? 0) / 2,
-          node.position.y + (node.height ?? 0) / 2,
-          {
-            zoom,
-            duration: motion(240),
-          },
-        );
+      if (!outside) return;
+      if (w <= el.clientWidth - margin * 2 && h <= el.clientHeight - margin * 2) {
+        void rf.setCenter(r.x + r.width / 2, r.y + r.height / 2, {
+          zoom,
+          duration: motion(240),
+        });
+      } else {
+        void rf.fitBounds(r, { padding: 0.12, duration: motion(240) });
       }
     },
     [rf],
+  );
+
+  /** Pan so a box is fully visible. */
+  const revealNode = useCallback(
+    (id: string) => {
+      const node = rf.getNode(id);
+      if (!node) return;
+      revealRect({
+        x: node.position.x,
+        y: node.position.y,
+        width: node.width ?? 0,
+        height: node.height ?? 0,
+      });
+    },
+    [rf, revealRect],
+  );
+
+  // ---- step player --------------------------------------------------------------------------
+
+  /** Flow-space area of a step: its arrows (routes and labels) and, off sequences, their boxes. */
+  const stepBounds = useCallback(
+    (step: DiagramStep): Rect | undefined => {
+      if (!model) return undefined;
+      const points: Point[] = [];
+      const addRect = (r: Rect | undefined) => {
+        if (r) points.push({ x: r.x, y: r.y }, { x: r.x + r.width, y: r.y + r.height });
+      };
+      for (const id of step.edgeIds) {
+        if (model.sequence) {
+          const message = model.sequence.messages.find((m) => m.id === id);
+          if (message) {
+            points.push(...message.points);
+            addRect(message.label);
+          }
+          continue;
+        }
+        const edge = model.spec.edges.find((e) => e.id === id);
+        if (!edge) continue;
+        addRect(model.layout?.nodes[edge.from]);
+        addRect(model.layout?.nodes[edge.to]);
+        points.push(...(model.layout?.edges[id]?.points ?? []));
+        addRect(model.layout?.edges[id]?.label);
+      }
+      if (!points.length) return undefined;
+      const xs = points.map((p) => p.x);
+      const ys = points.map((p) => p.y);
+      const left = Math.min(...xs);
+      const top = Math.min(...ys);
+      return { x: left, y: top, width: Math.max(...xs) - left, height: Math.max(...ys) - top };
+    },
+    [model],
+  );
+
+  /** Move the player to a step: emphasize it, select its arrow, show its code, bring it into view. */
+  const showStep = useCallback(
+    (index: number, follow: boolean = followCode) => {
+      const step = steps[index];
+      const edgeId = step?.edgeIds[0];
+      if (!model || model.graphId !== graphId || !step || !edgeId) return;
+      setPlayer({ graphId, index });
+      const code = follow ? stepCode(model.spec, step) : undefined;
+      const onStep = latest.current.onStep;
+      if (onStep) {
+        onStep({ edgeId, ...(code ? { ref: code.ref, nodeId: code.nodeId } : {}) });
+      } else {
+        selectEdge(edgeId);
+        if (code) openRef(code.ref);
+      }
+      const bounds = stepBounds(step);
+      if (bounds) revealRect(bounds);
+    },
+    [model, graphId, steps, followCode, selectEdge, openRef, stepBounds, revealRect],
+  );
+
+  const stopSteps = useCallback((): boolean => {
+    if (stepIndex === null) return false;
+    setPlayer(null);
+    return true;
+  }, [stepIndex]);
+
+  const toggleSteps = useCallback(() => {
+    if (stepIndex !== null) {
+      setPlayer(null);
+      return;
+    }
+    if (!steps.length) return;
+    // Resume at the selected arrow's step; from the last one (or none) start over.
+    const at = selectedEdgeId ? steps.findIndex((s) => s.edgeIds.includes(selectedEdgeId)) : -1;
+    showStep(at >= 0 && at < steps.length - 1 ? at : 0);
+  }, [stepIndex, steps, selectedEdgeId, showStep]);
+
+  const moveStep = useCallback(
+    (delta: number): boolean => {
+      if (stepIndex === null) return false;
+      const next = Math.min(steps.length - 1, Math.max(0, stepIndex + delta));
+      if (next !== stepIndex) showStep(next);
+      return true;
+    },
+    [stepIndex, steps.length, showStep],
+  );
+
+  const toggleFollowCode = useCallback(() => {
+    const next = !followCode;
+    setFollowCode(next);
+    if (stepIndex !== null) showStep(stepIndex, next);
+  }, [followCode, stepIndex, showStep]);
+
+  /** Clicking an arrow while playing jumps to its step; otherwise it just selects the arrow. */
+  const pickEdge = useCallback(
+    (id: string) => {
+      const at = stepIndex !== null ? steps.findIndex((s) => s.edgeIds.includes(id)) : -1;
+      if (at >= 0) showStep(at);
+      else selectEdge(id);
+    },
+    [stepIndex, steps, showStep, selectEdge],
   );
 
   useImperativeHandle(
@@ -500,12 +680,23 @@ function GraphCanvasInner(props: GraphCanvasProps) {
       toImage: async (format) => {
         const el = wrapperRef.current;
         if (!el) throw new Error('Canvas is not mounted.');
+        const emphasized = stepIndex !== null;
         setHovered(null);
-        await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
-        return exportFlowImage(el, rf.getNodesBounds(rf.getNodes()), format);
+        setExporting(true);
+        try {
+          await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+          // The capture reads computed styles: let the step emphasis fade out first.
+          if (emphasized) await new Promise((resolve) => window.setTimeout(resolve, motion(200)));
+          return await exportFlowImage(el, rf.getNodesBounds(rf.getNodes()), format);
+        } finally {
+          setExporting(false);
+        }
       },
+      toggleSteps,
+      moveStep,
+      stopSteps,
     }),
-    [fit, focusNode, rf],
+    [fit, focusNode, rf, stepIndex, toggleSteps, moveStep, stopSteps],
   );
 
   // ---- interaction --------------------------------------------------------------------------
@@ -514,6 +705,35 @@ function GraphCanvasInner(props: GraphCanvasProps) {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     // Keys on toolbar buttons, chips, badges (or text fields) belong to those elements.
     if (event.target !== event.currentTarget && isInteractiveTarget(event.target)) return;
+    if (event.key.toLowerCase() === 'p' && steps.length) {
+      event.preventDefault();
+      toggleSteps();
+      return;
+    }
+    if (stepIndex !== null) {
+      // While playing: ← → (or , .) step, Home / End jump, Esc stops; ↑ ↓ still move between boxes.
+      const delta =
+        event.key === 'ArrowRight' || event.key === '.'
+          ? 1
+          : event.key === 'ArrowLeft' || event.key === ','
+            ? -1
+            : 0;
+      if (delta) {
+        event.preventDefault();
+        moveStep(delta);
+        return;
+      }
+      if (event.key === 'Home' || event.key === 'End') {
+        event.preventDefault();
+        showStep(event.key === 'Home' ? 0 : steps.length - 1);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setPlayer(null);
+        return;
+      }
+    }
     const dir = ARROW_KEYS[event.key];
     if (dir) {
       event.preventDefault();
@@ -609,7 +829,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
       ask,
       openRef,
       openChild,
-      selectEdge: (id) => selectEdge(id),
+      selectEdge: pickEdge,
       hover,
       holdHover,
     }),
@@ -628,7 +848,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
       ask,
       openRef,
       openChild,
-      selectEdge,
+      pickEdge,
       hover,
       holdHover,
     ],
@@ -648,7 +868,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
         tabIndex={0}
         role="group"
         aria-roledescription="diagram"
-        aria-label={`${spec.title}. Arrow keys move between boxes, Enter expands, A asks, F fits.`}
+        aria-label={`${spec.title}. Arrow keys move between boxes, Enter expands, A asks, F fits.${steps.length ? ' P steps through the numbered arrows.' : ''}`}
         onKeyDown={onKeyDown}
         data-testid="graph-canvas"
       >
@@ -687,7 +907,7 @@ function GraphCanvasInner(props: GraphCanvasProps) {
           onNodeMouseLeave={(_, node) => {
             if (node.type === 'csNode') hover(null);
           }}
-          onEdgeClick={(_, edge) => selectEdge(edge.id)}
+          onEdgeClick={(_, edge) => pickEdge(edge.id)}
           onPaneClick={() => {
             setMenu(null);
             selectNode(null);
@@ -724,7 +944,35 @@ function GraphCanvasInner(props: GraphCanvasProps) {
               userMoved.current = false;
               void fit(300);
             }}
-          />
+          >
+            {steps.length ? (
+              <>
+                <IconButton
+                  icon={StepForward}
+                  label="Step through"
+                  shortcut="P"
+                  size="xs"
+                  tooltipSide="top"
+                  active={stepIndex !== null}
+                  onClick={toggleSteps}
+                />
+                <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
+              </>
+            ) : null}
+          </CanvasControls>
+          {stepIndex !== null ? (
+            <StepPlayer
+              index={stepIndex}
+              count={steps.length}
+              caption={caption}
+              hasCode={hasStepCode}
+              followCode={followCode}
+              onMove={moveStep}
+              onJump={(index) => showStep(index)}
+              onToggleCode={toggleFollowCode}
+              onClose={() => setPlayer(null)}
+            />
+          ) : null}
         </ReactFlow>
         {!model ? (
           // First layout (ELK loads lazily): a quiet spinner, only if it takes a moment.
@@ -748,7 +996,11 @@ function GraphCanvasInner(props: GraphCanvasProps) {
           />
         ) : null}
         <div className="sr-only" aria-live="polite">
-          {selectedNode ? `${selectedNode.label}, ${NODE_KIND_INFO[selectedNode.kind].label}` : ''}
+          {stepIndex !== null
+            ? `Step ${stepIndex + 1} of ${steps.length}: ${caption}`
+            : selectedNode
+              ? `${selectedNode.label}, ${NODE_KIND_INFO[selectedNode.kind].label}`
+              : ''}
         </div>
       </div>
     </CanvasContext.Provider>

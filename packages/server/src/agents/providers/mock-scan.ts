@@ -182,14 +182,49 @@ const IMPORT_PATTERNS: Record<Lang, RegExp[]> = {
   c: [/^\s*#\s*include\s+"([^"]+)"/gm],
 };
 
-export function parseImports(text: string, lang: Lang): string[] {
-  const out = new Set<string>();
+/** An import statement: its specifier and the (1-based) lines of its first occurrence. */
+export interface ImportSite {
+  spec: string;
+  startLine: number;
+  endLine: number;
+}
+
+/** Distinct import specifiers of a file, in order, each with the lines of its first import. */
+export function importSites(text: string, lang: Lang): ImportSite[] {
+  const lineStarts = [0];
+  for (let i = text.indexOf('\n'); i >= 0; i = text.indexOf('\n', i + 1)) lineStarts.push(i + 1);
+  const lineAt = (offset: number): number => {
+    let lo = 0;
+    let hi = lineStarts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if ((lineStarts[mid] ?? 0) <= offset) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo + 1;
+  };
+  const out = new Map<string, ImportSite>();
   for (const re of IMPORT_PATTERNS[lang]) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(text))) if (m[1]) out.add(m[1]);
+    while ((m = re.exec(text))) {
+      const spec = m[1];
+      if (!spec || out.has(spec)) continue;
+      // `^\s*` / `\s*$` may reach into neighbouring blank lines: count only the statement.
+      const body = m[0].trim();
+      const start = m.index + m[0].indexOf(body);
+      out.set(spec, {
+        spec,
+        startLine: lineAt(start),
+        endLine: lineAt(start + Math.max(0, body.length - 1)),
+      });
+    }
   }
-  return [...out];
+  return [...out.values()];
+}
+
+export function parseImports(text: string, lang: Lang): string[] {
+  return importSites(text, lang).map((site) => site.spec);
 }
 
 /** Candidate names a bare import specifier may refer to ("@scope/pkg/x" → "@scope/pkg", "pkg", "x"). */

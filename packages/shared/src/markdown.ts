@@ -104,6 +104,19 @@ export function conversationToMarkdown(conv: Conversation, options: MarkdownOpti
       );
     }
     out.push('');
+    const arrowsWithCode = spec.edges.filter((e) => e.refs?.length);
+    if (arrowsWithCode.length) {
+      const labels = new Map(spec.nodes.map((n) => [n.id, n.label]));
+      out.push('| Arrow | Code |', '|---|---|');
+      for (const edge of arrowsWithCode) {
+        const step = edge.step !== undefined ? `${edge.step}. ` : '';
+        const arrow = `${labels.get(edge.from) ?? edge.from} → ${labels.get(edge.to) ?? edge.to}`;
+        const label = edge.label ? `: ${edge.label}` : '';
+        const refs = (edge.refs ?? []).map((r) => `\`${formatRef(r, multiFolder)}\``).join(', ');
+        out.push(`| ${cell(`${step}${arrow}${label}`)} | ${cell(refs)} |`);
+      }
+      out.push('');
+    }
     if (entry.note) out.push(`> **Note:** ${entry.note.replace(/\n/g, '\n> ')}`, '');
     if (spec.suggestions.length)
       out.push(`**Next questions:** ${spec.suggestions.map((s) => `_${s}_`).join(' · ')}`, '');

@@ -307,6 +307,44 @@
 }
 
 /* ---------------------------------------------------------------------------------------------
+ * Step player: the current step's arrows (a dash runs along them, from source to target), the
+ * boxes they connect, and the player bar (kept clear of the zoom controls on the right).
+ * ------------------------------------------------------------------------------------------- */
+
+.cs-edge-group.is-step .cs-edge-path {
+  stroke: var(--cs-edge-active);
+}
+.cs-edge-group.is-step .cs-edge-arrow {
+  fill: var(--cs-edge-active);
+}
+.cs-edge-flow {
+  fill: none;
+  stroke: var(--accent-fg);
+  stroke-linecap: round;
+  stroke-dasharray: 2 8;
+  opacity: 0.85;
+  pointer-events: none;
+  animation: cs-dash 0.8s linear infinite;
+}
+.cs-edge-label.is-step {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
+}
+.cs-edge-label.is-step .cs-step {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.cs-flow .react-flow__node.cs-step-node .cs-node {
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--accent) 50%, transparent),
+    var(--shadow);
+}
+
+.cs-flow .react-flow__panel.cs-step-player {
+  max-width: calc(100% - 260px);
+}
+
+/* ---------------------------------------------------------------------------------------------
  * Thumbnails (SVG)
  * ------------------------------------------------------------------------------------------- */
 
@@ -495,6 +533,7 @@
   .cs-enter,
   .cs-edge-fade,
   .cs-edge-animated,
+  .cs-edge-flow,
   .cs-skeleton,
   .cs-node.is-pending {
     animation: none !important;

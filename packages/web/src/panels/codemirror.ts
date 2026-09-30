@@ -87,9 +87,11 @@ export function showLineRange(view: EditorView, range: LineRange | null, scroll:
     const lineHeight = view.defaultLineHeight || 20;
     const visible = Math.floor(view.scrollDOM.clientHeight / lineHeight);
     const fits = visible <= 0 || range.end - range.start + 1 <= visible - 4;
+    // The range's head is its start: centered vertically, and horizontally scrolled to the first
+    // column rather than to the end of the (possibly long) last line.
     effects.push(
       fits
-        ? EditorView.scrollIntoView(EditorSelection.range(from, to), { y: 'center' })
+        ? EditorView.scrollIntoView(EditorSelection.range(to, from), { y: 'center' })
         : EditorView.scrollIntoView(from, { y: 'start', yMargin: 3 * lineHeight }),
     );
   }

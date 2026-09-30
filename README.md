@@ -15,8 +15,10 @@ The answers come from AI coding agents already installed on your machine (Kiro C
   - The outline tree, breadcrumbs, and the conversation map show every diagram as a card.
   - Map edges start at the exact box that was expanded.
   - Boxes that already have child diagrams show a badge.
+- **Step through.** Flows and sequences play one numbered step at a time (`P`, then `,` / `.`). The diagram lights up as the steps go by, and the code viewer follows each step's lines.
 - **Code level.**
   - Boxes link to files and line ranges, opening in the built-in code viewer (CodeMirror) or in your editor.
+  - Arrows link to the line where the call, import or event happens, so every connection can be checked.
   - You can browse the whole workspace in the file explorer.
 - **Workspaces** can hold one or more folders, for example a backend and a frontend together.
 - **Import / export.**
@@ -94,7 +96,7 @@ flowchart LR
 3. The server normalizes the answer:
    - it accepts common synonyms and caps sizes;
    - it drops edges that point to boxes that don't exist;
-   - it checks every code reference against the file system: missing files are removed and line ranges are clamped.
+   - it checks every code reference of boxes and arrows against the file system: missing files are removed and line ranges are clamped.
 
    If the answer is invalid, the agent gets one repair round. Progress streams to the UI over Server-Sent Events.
 
@@ -145,6 +147,8 @@ packages/
 | `E` / `Shift E` | Explain & expand the selected box / expand it again |
 | `A` | Ask about the selected box |
 | Arrow keys, `Enter` | Move between boxes, expand |
+| `P` | Step through the numbered arrows |
+| `,` / `.` | Previous / next step (`←` / `→` while the diagram has focus) |
 | `U` or `Alt ←` | Parent diagram |
 | `[` / `]` | Previous / next sibling diagram |
 | `M` | Toggle the conversation map |

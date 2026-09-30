@@ -8,7 +8,10 @@ import {
   getState,
   goToParent,
   goToSibling,
+  moveStep,
+  stopSteps,
   toggleSidebar,
+  toggleSteps,
   toggleView,
 } from '../../store';
 
@@ -42,11 +45,16 @@ export function useConversationHotkeys(): void {
     { combo: '[', handler: () => goToSibling(-1) },
     { combo: ']', handler: () => goToSibling(1) },
     { combo: 'f', handler: fitView },
+    { combo: 'p', handler: toggleSteps },
+    { combo: ',', handler: () => void moveStep(-1) },
+    { combo: '.', handler: () => void moveStep(1) },
     { combo: 'mod+b', handler: toggleSidebar, allowInInputs: true },
     {
       combo: 'Escape',
       preventDefault: false,
       handler: () => {
+        // Innermost first: the step player, then the side panel, then the selection.
+        if (stopSteps()) return;
         const { rightPanel, selection } = getState();
         if (rightPanel) closeRightPanel();
         else if (selection.nodeId || selection.edgeId) clearSelection();

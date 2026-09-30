@@ -70,6 +70,9 @@ export function copyConversation(source: Conversation, opts: CopyOptions): Conve
     }
     if (g.spec && opts.aliasMap) {
       for (const node of g.spec.nodes) node.refs = node.refs.map((r) => mapRef(r, opts.aliasMap));
+      for (const edge of g.spec.edges) {
+        if (edge.refs) edge.refs = edge.refs.map((r) => mapRef(r, opts.aliasMap));
+      }
     }
     graphs.push(g);
   }

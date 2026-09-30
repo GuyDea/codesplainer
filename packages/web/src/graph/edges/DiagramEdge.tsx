@@ -5,6 +5,7 @@ import { cn } from '../../lib/cn';
 import { useCanvas } from '../canvas/context';
 import type { DiagramFlowEdge } from '../canvas/types';
 import { measureEdgeLabel, type Point } from '../layout';
+import { refTitle } from '../refs';
 import { EDGE_VISUALS } from '../visuals';
 import { arrowHead, polylineMidpoint, roundedPath, trimEnd } from './path';
 
@@ -58,7 +59,8 @@ function DiagramEdgeComponent({
   const hasArrow = visual.marker === 'arrow';
   const path = roundedPath(hasArrow ? trimEnd(points, 6) : points, 10);
   const arrow = hasArrow ? arrowHead(points, 8.5, 4.3) : '';
-  const strokeWidth = visual.width + (selected ? 0.7 : data.active ? 0.35 : 0);
+  const current = data.current;
+  const strokeWidth = visual.width + (current ? 1 : selected ? 0.7 : data.active ? 0.35 : 0);
   const delay = { '--cs-delay': `${data.delay}ms` } as CSSProperties;
 
   let labelBox = data.label;
@@ -71,6 +73,12 @@ function DiagramEdgeComponent({
   }
   const hasStep = edge.step !== undefined;
   const text = edge.label;
+  const caption = text ? (hasStep ? `${edge.step}. ${text}` : text) : `Step ${edge.step}`;
+  // Where the arrow happens in the code (first ref, "+N" for more).
+  const refs = edge.refs ?? [];
+  const where = refs[0]
+    ? `${refTitle(refs[0])}${refs.length > 1 ? ` +${refs.length - 1}` : ''}`
+    : undefined;
 
   return (
     <>
@@ -79,11 +87,13 @@ function DiagramEdgeComponent({
         className={cn(
           'cs-edge-group cs-edge-fade',
           data.active && 'is-active',
+          current && 'is-step',
           selected && 'is-selected',
           data.dim && !selected && 'is-dim',
         )}
         style={delay}
       >
+        {where ? <title>{text ? `${text}\n${where}` : where}</title> : null}
         <path d={path} className="cs-edge-hit react-flow__edge-interaction" strokeWidth={16} />
         <path
           d={path}
@@ -91,6 +101,10 @@ function DiagramEdgeComponent({
           strokeWidth={strokeWidth}
           strokeDasharray={visual.dash}
         />
+        {current ? (
+          // Dots running from source to target: the direction of the step.
+          <path d={path} className="cs-edge-flow" strokeWidth={Math.max(1, strokeWidth - 1.2)} />
+        ) : null}
         {arrow ? <path d={arrow} className="cs-edge-arrow" /> : null}
       </g>
       {labelBox ? (
@@ -101,6 +115,7 @@ function DiagramEdgeComponent({
               'cs-edge-label cs-edge-fade nopan',
               hasStep && 'has-step',
               !text && 'step-only',
+              current && 'is-step',
               selected && 'is-selected',
               data.active && 'is-active',
               data.dim && !selected && 'is-dim',
@@ -111,7 +126,7 @@ function DiagramEdgeComponent({
               width: labelBox.width,
               height: labelBox.height,
             }}
-            title={text ? (hasStep ? `${edge.step}. ${text}` : text) : `Step ${edge.step}`}
+            title={where ? `${caption}\n${where}` : caption}
             onClick={(event) => {
               event.stopPropagation();
               ctx.selectEdge(id);

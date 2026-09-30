@@ -100,8 +100,13 @@ export interface NodeInspectorProps {
 export interface EdgeInspectorProps {
   graph: GraphEntry;
   edge: GraphEdge;
+  /** Show folder aliases in the arrow's code refs. */
+  multiFolder?: boolean;
   /** Ask a follow-up that explains this interaction. */
   onExplain: () => void;
+  /** Open one of the arrow's code refs (without it the "Code" section is hidden). */
+  onOpenRef?: (ref: CodeRef) => void;
+  onOpenInEditor?: (ref: CodeRef) => void;
   onSelectNode: (nodeId: string) => void;
   onClose: () => void;
   className?: string;

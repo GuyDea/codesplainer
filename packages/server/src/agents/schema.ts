@@ -9,6 +9,26 @@ import { EDGE_KINDS, GRAPH_KINDS, NODE_KINDS } from '@codesplainer/shared';
 const nullableString = { type: ['string', 'null'] } as const;
 const nullableInt = { type: ['integer', 'null'] } as const;
 
+/** A code location (boxes and arrows). */
+const REF_ITEM_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['folder', 'path', 'startLine', 'endLine', 'symbol'],
+  properties: {
+    folder: { ...nullableString, description: 'Workspace folder alias.' },
+    path: {
+      type: 'string',
+      description: 'Path relative to the folder root. Directory or file.',
+    },
+    startLine: nullableInt,
+    endLine: nullableInt,
+    symbol: {
+      ...nullableString,
+      description: 'Function/class/symbol name, if specific.',
+    },
+  },
+} as const;
+
 export const GRAPH_OUTPUT_SCHEMA: Record<string, unknown> = {
   type: 'object',
   additionalProperties: false,
@@ -44,24 +64,7 @@ export const GRAPH_OUTPUT_SCHEMA: Record<string, unknown> = {
           refs: {
             type: 'array',
             description: 'Where this lives in the code. Verified paths only.',
-            items: {
-              type: 'object',
-              additionalProperties: false,
-              required: ['folder', 'path', 'startLine', 'endLine', 'symbol'],
-              properties: {
-                folder: { ...nullableString, description: 'Workspace folder alias.' },
-                path: {
-                  type: 'string',
-                  description: 'Path relative to the folder root. Directory or file.',
-                },
-                startLine: nullableInt,
-                endLine: nullableInt,
-                symbol: {
-                  ...nullableString,
-                  description: 'Function/class/symbol name, if specific.',
-                },
-              },
-            },
+            items: REF_ITEM_SCHEMA,
           },
         },
       },
@@ -71,7 +74,7 @@ export const GRAPH_OUTPUT_SCHEMA: Record<string, unknown> = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['from', 'to', 'label', 'kind', 'step'],
+        required: ['from', 'to', 'label', 'kind', 'step', 'refs'],
         properties: {
           from: { type: 'string' },
           to: { type: 'string' },
@@ -83,6 +86,12 @@ export const GRAPH_OUTPUT_SCHEMA: Record<string, unknown> = {
           step: {
             ...nullableInt,
             description: 'Order for flow/sequence diagrams (1-based), else null.',
+          },
+          refs: {
+            type: 'array',
+            description:
+              'Line where this arrow happens (the call, import, emit, read or write). [] if not seen.',
+            items: REF_ITEM_SCHEMA,
           },
         },
       },

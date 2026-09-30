@@ -3,6 +3,8 @@ import { EDGE_KIND_INFO, NODE_KIND_INFO, type GraphNode } from '@codesplainer/sh
 import { cn } from '../lib/cn';
 import { EDGE_VISUALS, NODE_VISUALS, kindStyle } from '../graph/visuals';
 import { Button, IconButton, Tooltip } from '../ui';
+import { Section } from './parts';
+import { RefList } from './RefList';
 import type { EdgeInspectorProps } from './types';
 
 function NodeChip({
@@ -45,7 +47,10 @@ function NodeChip({
 export function EdgeInspector({
   graph,
   edge,
+  multiFolder = false,
   onExplain,
+  onOpenRef,
+  onOpenInEditor,
   onSelectNode,
   onClose,
   className,
@@ -127,6 +132,17 @@ export function EdgeInspector({
           Explain this interaction
         </Button>
       </div>
+
+      {edge.refs?.length && onOpenRef ? (
+        <Section title="Code" count={edge.refs.length}>
+          <RefList
+            refs={edge.refs}
+            multiFolder={multiFolder}
+            onOpen={onOpenRef}
+            onOpenInEditor={onOpenInEditor}
+          />
+        </Section>
+      ) : null}
     </aside>
   );
 }

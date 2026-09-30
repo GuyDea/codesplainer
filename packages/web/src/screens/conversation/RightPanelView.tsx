@@ -93,7 +93,16 @@ export function RightPanelView({ conversation, workspace, graph, panel }: Props)
               <EdgeInspector
                 graph={graph}
                 edge={edge}
+                multiFolder={multiFolder}
                 onExplain={() => void explainEdge(edge.id)}
+                onOpenRef={(ref: CodeRef) =>
+                  void openCode(ref, {
+                    back: 'edge',
+                    // The call site lives in the arrow's source box.
+                    context: { graphId: graph.id, nodeId: edge.from },
+                  })
+                }
+                onOpenInEditor={(ref: CodeRef) => void openInEditor(ref, ref.startLine)}
                 onSelectNode={focusBox}
                 onClose={closeRightPanel}
                 className="min-h-0 flex-1"

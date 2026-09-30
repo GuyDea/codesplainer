@@ -1,22 +1,20 @@
-import { ArrowLeft, ArrowRight, Folder, RotateCcw, SquareArrowOutUpRight, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCcw, X } from 'lucide-react';
 import {
   EDGE_KIND_INFO,
   NODE_KIND_INFO,
   childrenOfNode,
   expansionOfNode,
-  formatRef,
   graphDisplayTitle,
   isPending,
   neighbours,
-  type CodeRef,
   type GraphEdge,
   type GraphNode,
 } from '@codesplainer/shared';
 import { cn } from '../lib/cn';
 import { NODE_VISUALS, ORIGIN_VISUALS, kindStyle } from '../graph/visuals';
 import { Badge, Button, IconButton, Kbd, StatusIcon, Tooltip } from '../ui';
-import { dirName, fileIcon, fileName, lineRangeLabel } from './helpers';
 import { Section } from './parts';
+import { RefList } from './RefList';
 import type { NodeInspectorProps } from './types';
 
 const EXPAND_ICON = ORIGIN_VISUALS.expand.icon;
@@ -89,47 +87,6 @@ export function NodeInspector({
             </span>
           ) : null}
         </button>
-      </li>
-    );
-  };
-
-  const refRow = (ref: CodeRef, index: number) => {
-    const name = fileName(ref.path) || ref.folder || '.';
-    const lines = lineRangeLabel(ref);
-    const dir = dirName(ref.path);
-    const where = [multiFolder && ref.folder ? ref.folder : '', dir].filter(Boolean).join(':');
-    const secondary = [ref.symbol, where].filter(Boolean).join(' · ');
-    const RefIcon = ref.isDir ? Folder : fileIcon(name);
-    return (
-      <li
-        key={`${index}:${formatRef(ref)}`}
-        className="group flex items-center rounded-md hover:bg-surface-2"
-      >
-        <Tooltip label={formatRef(ref, multiFolder)} delay={600} className="min-w-0 flex-1">
-          <button
-            type="button"
-            onClick={() => onOpenRef(ref)}
-            className="flex w-full min-w-0 items-start gap-2 rounded-md px-2 py-1.5 text-left focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:outline-none"
-          >
-            <RefIcon size={14} aria-hidden className="mt-px shrink-0 text-subtle" />
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate font-mono text-[12px] text-fg">
-                {name}
-                {lines ? <span className="text-subtle">:{lines}</span> : null}
-              </span>
-              {secondary ? (
-                <span className="truncate font-mono text-[11px] text-subtle">{secondary}</span>
-              ) : null}
-            </span>
-          </button>
-        </Tooltip>
-        <IconButton
-          icon={SquareArrowOutUpRight}
-          label="Open in editor"
-          size="xs"
-          onClick={() => onOpenInEditor(ref)}
-          className="mr-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
-        />
       </li>
     );
   };
@@ -218,7 +175,12 @@ export function NodeInspector({
 
       {node.refs.length ? (
         <Section title="Code" count={node.refs.length}>
-          <ul className="flex flex-col">{node.refs.map(refRow)}</ul>
+          <RefList
+            refs={node.refs}
+            multiFolder={multiFolder}
+            onOpen={onOpenRef}
+            onOpenInEditor={onOpenInEditor}
+          />
         </Section>
       ) : null}
 

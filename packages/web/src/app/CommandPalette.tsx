@@ -17,10 +17,12 @@ import {
   RefreshCw,
   Search,
   Settings,
+  StepForward,
   SunMoon,
   type LucideIcon,
 } from 'lucide-react';
 import { expansionOfNode, getGraph, graphDisplayTitle, type Workspace } from '@codesplainer/shared';
+import { diagramSteps } from '../graph/steps';
 import { NODE_VISUALS, ORIGIN_VISUALS, kindStyle } from '../graph/visuals';
 import { cn } from '../lib/cn';
 import { relativeTime } from '../lib/format';
@@ -41,6 +43,7 @@ import {
   setView,
   sortWorkspacesRecent,
   toggleSidebar,
+  toggleSteps,
   toggleTheme,
   toggleView,
   useAppStore,
@@ -291,6 +294,22 @@ function Palette({ route }: { route: Route }) {
                     keywords={['fit', 'zoom']}
                     onSelect={() => run(fitView)}
                   />
+                  {spec && diagramSteps(spec).length ? (
+                    <ActionItem
+                      id="steps"
+                      icon={StepForward}
+                      label="Step through this diagram"
+                      shortcut="P"
+                      keywords={['step', 'through', 'play', 'walk', 'flow', 'sequence', 'order']}
+                      onSelect={() =>
+                        run(() => {
+                          // The canvas only exists in the diagram view.
+                          if (view === 'map') setView('diagram');
+                          window.setTimeout(toggleSteps, view === 'map' ? 120 : 0);
+                        })
+                      }
+                    />
+                  ) : null}
                   <ActionItem
                     id="export-json"
                     icon={FileDown}

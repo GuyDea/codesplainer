@@ -33,14 +33,15 @@ import {
   NOTABLE_FILES,
   findSymbols,
   isSource,
+  importSites,
   languageOf,
   listEntries,
-  parseImports,
   pathHits,
   readText,
   resolveRelative,
   specifierNames,
   walkFiles,
+  type Lang,
   type SymbolInfo,
 } from './mock-scan';
 
@@ -69,6 +70,7 @@ interface RawEdge {
   label: string;
   kind: EdgeKind;
   step: number | null;
+  refs: RawRef[];
 }
 interface RawSpec {
   title: string;
@@ -108,9 +110,16 @@ class Draft {
     return id;
   }
 
-  edge(from: string, to: string, label: string, kind: EdgeKind, step: number | null = null): void {
+  edge(
+    from: string,
+    to: string,
+    label: string,
+    kind: EdgeKind,
+    step: number | null = null,
+    refs: RawRef[] = [],
+  ): void {
     if (from === to || this.edges.some((e) => e.from === from && e.to === to)) return;
-    this.edges.push({ from, to, label, kind, step });
+    this.edges.push({ from, to, label, kind, step, refs });
   }
 
   highlight(ids: string[]): void {
@@ -335,9 +344,19 @@ async function levelItems(
   return { items: selected, hidden: Math.max(0, total - shown) };
 }
 
-/** Count import statements between items. Key "i>j" → count. */
-async function importEdges(scan: Scan, items: Item[], budget = 300): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
+/** Imports from one item into another: how many, and where the first one is. */
+interface ImportLink {
+  count: number;
+  site: RawRef;
+}
+
+/** Import statements between items. Key "i>j" → link. */
+async function importEdges(
+  scan: Scan,
+  items: Item[],
+  budget = 300,
+): Promise<Map<string, ImportLink>> {
+  const links = new Map<string, ImportLink>();
   let scanned = 0;
   let announced = 0;
   const perItem = Math.max(10, Math.floor(budget / Math.max(1, items.length)));
@@ -360,25 +379,25 @@ async function importEdges(scan: Scan, items: Item[], budget = 300): Promise<Map
       const lang = languageOf(file);
       if (!lang) continue;
       const text = await readText(file, 64 * 1024);
-      for (const spec of parseImports(text, lang)) {
-        if (spec.startsWith('node:')) continue;
-        const target = resolveTarget(spec, file, lang, items);
+      for (const site of importSites(text, lang)) {
+        if (site.spec.startsWith('node:')) continue;
+        const target = resolveTarget(site.spec, file, lang, items);
         if (target === undefined || target === i) continue;
         const key = `${i}>${target}`;
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+        const link = links.get(key);
+        if (link) link.count++;
+        else {
+          const rel = toPosixPath(relative(item.folder.path, file));
+          links.set(key, { count: 1, site: ref(item.folder, rel, site.startLine, site.endLine) });
+        }
       }
     }
   }
   if (scanned > 2) await scan.step(`Scanning imports in ${scanned} files`);
-  return counts;
+  return links;
 }
 
-function resolveTarget(
-  spec: string,
-  file: string,
-  lang: Parameters<typeof parseImports>[1],
-  items: Item[],
-): number | undefined {
+function resolveTarget(spec: string, file: string, lang: Lang, items: Item[]): number | undefined {
   const rel = resolveRelative(spec, file, lang);
   if (rel) {
     const idx = items.findIndex((it) => it.kind !== 'config' && pathHits(rel, it.abs, it.isDir));
@@ -406,17 +425,17 @@ function itemNodes(draft: Draft, items: Item[], group?: (item: Item) => string |
 function addImportEdges(
   draft: Draft,
   ids: string[],
-  counts: Map<string, number>,
+  links: Map<string, ImportLink>,
   maxEdges: number,
 ): Map<string, number> {
   const degree = new Map<string, number>();
-  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, maxEdges);
-  for (const [key] of sorted) {
+  const sorted = [...links.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, maxEdges);
+  for (const [key, link] of sorted) {
     const [a, b] = key.split('>').map(Number);
     const from = ids[a as number];
     const to = ids[b as number];
     if (!from || !to) continue;
-    draft.edge(from, to, 'imports', 'dependency');
+    draft.edge(from, to, 'imports', 'dependency', null, [link.site]);
     degree.set(from, (degree.get(from) ?? 0) + 1);
     degree.set(to, (degree.get(to) ?? 0) + 2); // being imported matters more
   }
@@ -606,17 +625,23 @@ function symbolDiagram(
   const lines = text.split(/\r?\n/);
   const degree = new Map<string, number>();
   chosen.forEach((a, i) => {
-    const body = lines.slice(a.startLine, a.endLine).join('\n');
+    // The body without the declaration line: body[k] is file line a.startLine + 1 + k.
+    const body = lines.slice(a.startLine, a.endLine);
     chosen.forEach((b, j) => {
       if (i === j || b.name.length < 3) return;
-      if (new RegExp(`\\b${b.name.replace(/[$]/g, '\\$')}\\b`).test(body)) {
+      const mention = new RegExp(`\\b${b.name.replace(/[$]/g, '\\$')}\\b`);
+      const at = body.findIndex((line) => mention.test(line));
+      if (at >= 0) {
         const from = ids[i] as string;
         const to = ids[j] as string;
+        const line = a.startLine + 1 + at;
         draft.edge(
           from,
           to,
           b.kind === 'function' ? 'calls' : 'uses',
           b.kind === 'function' ? 'call' : 'dependency',
+          null,
+          [ref(folder, rel, line, line, b.name)],
         );
         degree.set(from, (degree.get(from) ?? 0) + 1);
         degree.set(to, (degree.get(to) ?? 0) + 1);

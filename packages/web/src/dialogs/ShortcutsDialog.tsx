@@ -17,6 +17,8 @@ export const SHORTCUT_GROUPS: { title: string; items: Shortcut[] }[] = [
       { keys: ['e'], label: 'Explain & expand the selected box' },
       { keys: ['shift+e'], label: 'Expand it again (new expansion)' },
       { keys: ['a'], label: 'Ask about the selected box' },
+      { keys: ['p'], label: 'Step through the numbered arrows' },
+      { keys: [',', '.'], label: 'Previous / next step', pair: true },
       { keys: ['f'], label: 'Fit view' },
       { keys: ['Escape'], label: 'Close panel / clear selection' },
     ],

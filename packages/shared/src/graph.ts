@@ -52,6 +52,11 @@ export const graphEdgeSchema = z.object({
   kind: z.enum(EDGE_KINDS).default('other'),
   /** Ordinal for flows / sequences (1-based). */
   step: z.number().int().positive().optional(),
+  /**
+   * Where the relationship happens in the code: the call, import, emit, read or write site.
+   * Verified like node refs; omitted when unknown (never an empty array).
+   */
+  refs: z.array(codeRefSchema).optional(),
 });
 export type GraphEdge = z.infer<typeof graphEdgeSchema>;
 
@@ -299,7 +304,7 @@ function normalizeRef(partial: Partial<CodeRef>): CodeRef | undefined {
 }
 
 /** Parse refs in any of the shapes agents tend to produce (strings, objects, arrays thereof). */
-export function parseRefs(value: unknown): CodeRef[] {
+export function parseRefs(value: unknown, max: number = GRAPH_LIMITS.maxRefsPerNode): CodeRef[] {
   const out: CodeRef[] = [];
   const seen = new Set<string>();
   for (const item of arr(value)) {
@@ -312,7 +317,7 @@ export function parseRefs(value: unknown): CodeRef[] {
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(ref);
-    if (out.length >= GRAPH_LIMITS.maxRefsPerNode) break;
+    if (out.length >= max) break;
   }
   return out;
 }
@@ -422,6 +427,23 @@ const EDGE_LABEL_KEYS = [
 ];
 const EDGE_KIND_KEYS = ['kind', 'type', 'category', 'relation', 'style'];
 const EDGE_STEP_KEYS = ['step', 'order', 'seq', 'sequence', 'index', 'number', 'n'];
+/**
+ * Where an arrow happens in the code. Unlike NODE_REF_KEYS without "source" (an endpoint key
+ * here), "path" (often an HTTP route) and "code" (often a code snippet).
+ */
+const EDGE_REF_KEYS = [
+  'refs',
+  'ref',
+  'references',
+  'callSite',
+  'call_site',
+  'callsite',
+  'evidence',
+  'location',
+  'locations',
+  'file',
+  'files',
+];
 
 const GROUP_LIST_KEYS = [
   'groups',
@@ -572,6 +594,7 @@ export function normalizeGraphSpec(input: unknown): NormalizeResult {
     step?: number;
     rawFrom?: unknown;
     rawTo?: unknown;
+    refs?: CodeRef[];
   }
   const drafts: Draft[] = [];
   for (const item of arr(pick(root, EDGE_LIST_KEYS))) {
@@ -587,6 +610,7 @@ export function normalizeGraphSpec(input: unknown): NormalizeResult {
       label: str(pick(item, EDGE_LABEL_KEYS)),
       kindRaw: pick(item, EDGE_KIND_KEYS),
       step: posInt(pick(item, EDGE_STEP_KEYS)),
+      refs: parseRefs(pick(item, EDGE_REF_KEYS), GRAPH_LIMITS.maxRefsPerEdge),
     });
   }
   // Outgoing lists declared on nodes ("dependsOn": ["b"]).
@@ -609,7 +633,8 @@ export function normalizeGraphSpec(input: unknown): NormalizeResult {
   );
   const allowSelfLoops = graphKindHint === 'sequence' || graphKindHint === 'state';
   const edges: GraphEdge[] = [];
-  const edgeKeys = new Set<string>();
+  /** Dedupe key -> kept edge (a duplicate may still contribute the refs the first one lacked). */
+  const edgeByKey = new Map<string, GraphEdge>();
   const edgeIds = new Set<string>();
   let dropped = 0;
   let selfLoops = 0;
@@ -626,8 +651,11 @@ export function normalizeGraphSpec(input: unknown): NormalizeResult {
     }
     const label = d.label ? truncate(d.label, GRAPH_LIMITS.edgeLabelChars) : undefined;
     const key = `${from}>${to}|${(label ?? '').toLowerCase()}|${d.step ?? ''}`;
-    if (edgeKeys.has(key)) continue;
-    edgeKeys.add(key);
+    const existing = edgeByKey.get(key);
+    if (existing) {
+      if (!existing.refs && d.refs?.length) existing.refs = d.refs;
+      continue;
+    }
     let id = `e-${from}-${to}`;
     let n = 2;
     while (edgeIds.has(id)) id = `e-${from}-${to}-${n++}`;
@@ -635,6 +663,8 @@ export function normalizeGraphSpec(input: unknown): NormalizeResult {
     const edge: GraphEdge = { id, from, to, kind: toEdgeKind(d.kindRaw ?? d.label) };
     if (label) edge.label = label;
     if (d.step !== undefined) edge.step = d.step;
+    if (d.refs?.length) edge.refs = d.refs;
+    edgeByKey.set(key, edge);
     edges.push(edge);
   }
   if (dropped > 0) warnings.push(`Dropped ${dropped} edge(s) pointing to unknown nodes.`);

@@ -49,6 +49,7 @@ import {
   openDialog,
   promptText,
   reportError,
+  selectEdge,
   selectNode,
   setAskDraft,
   setAskPrefs,
@@ -118,6 +119,43 @@ export function goToSibling(delta: -1 | 1): void {
 export function fitView(): void {
   if (getState().view === 'map') conversationMapRef.current?.fitView();
   else graphCanvasRef.current?.fitView();
+}
+
+// ---- step player -----------------------------------------------------------------------------
+
+/** Start / stop stepping through the current diagram's numbered arrows (P). */
+export function toggleSteps(): void {
+  if (getState().view === 'diagram') graphCanvasRef.current?.toggleSteps();
+}
+
+/** Previous / next step while the player runs (, and .); false when it is not running. */
+export function moveStep(delta: number): boolean {
+  return getState().view === 'diagram' && (graphCanvasRef.current?.moveStep(delta) ?? false);
+}
+
+/** Stop the player; false when it was not running. */
+export function stopSteps(): boolean {
+  return getState().view === 'diagram' && (graphCanvasRef.current?.stopSteps() ?? false);
+}
+
+/**
+ * The step player moved: select the step's arrow and, when the step has code, show it. The
+ * arrow is selected without switching the panel to its inspector, so an open code viewer only
+ * moves its highlight when the next step is in the same file (no reload, no flicker).
+ */
+export function showDiagramStep(
+  graphId: string,
+  step: { edgeId: string; ref?: CodeRef; nodeId?: string },
+): void {
+  if (!step.ref) {
+    selectEdge(step.edgeId);
+    return;
+  }
+  setState({ selection: { nodeId: null, edgeId: step.edgeId } });
+  void openCode(step.ref, {
+    back: 'edge',
+    context: { graphId, ...(step.nodeId ? { nodeId: step.nodeId } : {}) },
+  });
 }
 
 // ---- asking ----------------------------------------------------------------------------------

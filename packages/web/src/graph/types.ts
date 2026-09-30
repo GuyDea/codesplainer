@@ -10,6 +10,8 @@
  *   layout (e.g. to warm the cache); GraphLayout, LayoutRect types.
  * - refChipText(ref, multiFolder) / refTitle(ref): the text of a box's ref chip / its tooltip.
  * - preferredChild(children): the child diagram a badge click opens (latest done, else latest).
+ * - Step player: GraphCanvasProps.onStep, GraphCanvasHandle.toggleSteps / moveStep / stopSteps,
+ *   and diagramSteps(spec) (the stops; empty when a diagram has nothing to step through).
  *
  * Sizing: GraphCanvas and ConversationMap fill their parent (h-full w-full); the parent needs a
  * definite height. Both refit on container resize until the user pans or zooms.
@@ -37,6 +39,22 @@ export interface GraphCanvasHandle {
   focusNode(nodeId: string): void;
   /** Render the current diagram to an image data URL (whole diagram, not just the viewport). */
   toImage(format: 'png' | 'svg'): Promise<string>;
+  /** (Added) Start or stop the step player (no-op without numbered arrows / messages). */
+  toggleSteps(): void;
+  /** (Added) Move the step player by `delta` steps; false when it is not running. */
+  moveStep(delta: number): boolean;
+  /** (Added) Stop the step player; false when it was not running. */
+  stopSteps(): boolean;
+}
+
+/** (Added) The step player moved to a step. */
+export interface CanvasStepEvent {
+  /** The step's first arrow: select it. */
+  edgeId: string;
+  /** The step's code, when the player's code switch is on and the step has some (see stepCode). */
+  ref?: CodeRef;
+  /** The box that code belongs to. */
+  nodeId?: string;
 }
 
 export interface GraphCanvasProps {
@@ -55,6 +73,11 @@ export interface GraphCanvasProps {
   onOpenRef?: (ref: CodeRef) => void;
   /** Open a child diagram (badge on an already expanded node). */
   onOpenChild?: (graphId: string) => void;
+  /**
+   * (Added) The step player moved. The app selects the arrow and shows the code. Without this
+   * prop the canvas selects the arrow itself (onSelectEdge) and opens the code with onOpenRef.
+   */
+  onStep?: (step: CanvasStepEvent) => void;
   /** Child diagrams per node id, oldest first. */
   nodeChildren?: Record<string, NodeChildInfo[]>;
   /** Override the layout direction (default: spec.direction or by kind). */

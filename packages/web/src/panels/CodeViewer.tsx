@@ -363,9 +363,12 @@ export function CodeViewer({
                   {file.folder}
                 </span>
               ) : null}
-              <span className="flex min-w-0 items-baseline">
-                {dir ? <span className="min-w-0 truncate text-subtle">{dir}/</span> : null}
-                <span className="shrink-0 font-medium text-fg">{name}</span>
+              {/* The directory gives way first; a long file name is cut too rather than overflow. */}
+              <span className="flex min-w-0 items-baseline overflow-hidden">
+                {dir ? (
+                  <span className="min-w-0 shrink-[999] truncate text-subtle">{dir}/</span>
+                ) : null}
+                <span className="min-w-0 truncate font-medium text-fg">{name}</span>
               </span>
             </div>
           </Tooltip>

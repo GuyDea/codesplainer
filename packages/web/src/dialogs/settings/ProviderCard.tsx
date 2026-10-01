@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import {
   formatDuration,
-  type ProviderId,
+  PROVIDER_RUN_OPTIONS,
   type ProviderInfo,
   type ProviderSettings,
   type ProviderTestResponse,
@@ -23,11 +23,6 @@ import { cn } from '../../lib/cn';
 import { refreshProviders, testProvider, updateSettings } from '../../store';
 import { Badge, Button, Select, Switch } from '../../ui';
 import { DraftInput, SettingRow } from './fields';
-
-const EFFORTS: Partial<Record<ProviderId, string[]>> = {
-  claude: ['low', 'medium', 'high', 'xhigh', 'max'],
-  codex: ['minimal', 'low', 'medium', 'high', 'xhigh'],
-};
 
 const CUSTOM = '__custom__';
 
@@ -53,7 +48,7 @@ export function ProviderCard({
   const [showOutput, setShowOutput] = useState(false);
   const patch = (p: Partial<ProviderSettings>) => updateSettings({ providers: { [id]: p } });
   const ready = info.available && info.enabled;
-  const efforts = EFFORTS[id];
+  const { efforts, fast } = PROVIDER_RUN_OPTIONS[id];
 
   const runTest = async () => {
     setTest({ running: true });
@@ -147,8 +142,8 @@ export function ProviderCard({
           <SettingRow label="Model">
             <ModelPicker info={info} value={ps.model} onChange={(model) => patch({ model })} />
           </SettingRow>
-          {efforts ? (
-            <SettingRow label="Effort" hint="Reasoning effort.">
+          {efforts.length ? (
+            <SettingRow label="Effort" hint="Reasoning effort. The ask bar can override it.">
               <Select
                 aria-label={`${info.name} effort`}
                 value={ps.effort}
@@ -158,6 +153,22 @@ export function ProviderCard({
                   ...efforts.map((e) => ({ value: e, label: e })),
                 ]}
                 className="w-40"
+              />
+            </SettingRow>
+          ) : null}
+          {fast ? (
+            <SettingRow
+              label="Fast mode"
+              hint={
+                id === 'claude'
+                  ? 'Faster answers at a higher price; needs usage credits on your account.'
+                  : 'Faster answers at a higher price.'
+              }
+            >
+              <Switch
+                checked={ps.fast}
+                onChange={(on) => patch({ fast: on })}
+                label={<span className="sr-only">Fast mode</span>}
               />
             </SettingRow>
           ) : null}

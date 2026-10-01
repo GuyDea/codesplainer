@@ -32,10 +32,13 @@ export interface AskChoice {
   provider: ProviderId;
   model: string;
   detail: DetailLevel;
+  /** '' = the provider setting. */
+  effort: string;
+  fast: boolean;
 }
 
 /**
- * Provider/model/detail used for the next question: the remembered choice, else settings. When
+ * Provider/model/detail/effort/fast used for the next question: the remembered choice, else settings. When
  * that provider is known to be unavailable, fall back to the first ready one (real agents
  * before the offline demo) so a first question does not fail on a missing CLI.
  */
@@ -57,6 +60,8 @@ export function effectiveAskChoice(
     provider,
     model: prefs.models[provider] ?? '',
     detail: prefs.detail ?? settings?.detail ?? 'balanced',
+    effort: prefs.efforts?.[provider] ?? '',
+    fast: prefs.fast?.[provider] ?? settings?.providers[provider].fast ?? false,
   };
 }
 

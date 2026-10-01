@@ -32,6 +32,33 @@ function setup(overrides: Partial<AskBarProps> = {}) {
 }
 
 describe('AskBar', () => {
+  it('offers effort and fast mode for providers that support them', () => {
+    const onEffortChange = vi.fn();
+    const onFastChange = vi.fn();
+    const { rerender, props } = setup({ defaultEffort: 'high', onEffortChange, onFastChange });
+    fireEvent.click(screen.getByRole('button', { name: 'Effort: Default' }));
+    expect(screen.getAllByRole('menuitem').map((i) => i.textContent)).toEqual([
+      'Defaulthigh',
+      'low',
+      'medium',
+      'high',
+      'xhigh',
+      'max',
+    ]);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'max' }));
+    expect(onEffortChange).toHaveBeenCalledWith('max');
+
+    const fast = screen.getByRole('button', { name: 'Fast mode: off' });
+    expect(fast.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(fast);
+    expect(onFastChange).toHaveBeenCalledWith(true);
+
+    // Kiro has neither option.
+    rerender(<AskBar {...props} provider="kiro" />);
+    expect(screen.queryByRole('button', { name: /^Effort/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Fast mode/ })).toBeNull();
+  });
+
   it('submits on Enter, not on Shift+Enter', () => {
     const { props, input } = setup();
     fireEvent.change(input, { target: { value: '  How does auth work?  ' } });

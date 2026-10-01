@@ -19,7 +19,15 @@ function loadAskPrefs(): AskPrefs {
       if (typeof value === 'string') models[id] = value;
     }
   }
-  return { provider, models, detail };
+  const efforts: NonNullable<AskPrefs['efforts']> = {};
+  const fast: NonNullable<AskPrefs['fast']> = {};
+  for (const id of PROVIDER_IDS) {
+    const effort = (raw.efforts as Record<string, unknown> | undefined)?.[id];
+    if (typeof effort === 'string' && /^[a-z]*$/.test(effort)) efforts[id] = effort;
+    const on = (raw.fast as Record<string, unknown> | undefined)?.[id];
+    if (typeof on === 'boolean') fast[id] = on;
+  }
+  return { provider, models, detail, efforts, fast };
 }
 
 function loadSidebar(): UiState['sidebar'] {

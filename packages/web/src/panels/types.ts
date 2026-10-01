@@ -156,6 +156,15 @@ export interface AskBarProps {
   onProviderChange: (id: ProviderId) => void;
   onModelChange: (model: string) => void;
   onDetailChange: (detail: DetailLevel) => void;
+  /**
+   * Reasoning effort ('' = the provider setting, shown as `defaultEffort`) and fast mode. Each
+   * control appears when its handler is given and the provider supports it (PROVIDER_RUN_OPTIONS).
+   */
+  effort?: string;
+  defaultEffort?: string;
+  fast?: boolean;
+  onEffortChange?: (effort: string) => void;
+  onFastChange?: (fast: boolean) => void;
   onSubmit: (question: string) => void | Promise<void>;
   busy?: boolean;
   /** Increment to focus the input (e.g. "/" shortcut). */

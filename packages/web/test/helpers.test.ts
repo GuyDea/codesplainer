@@ -130,6 +130,8 @@ describe('selectors', () => {
       provider: 'claude',
       model: '',
       detail: 'simple',
+      effort: '',
+      fast: false,
     });
     expect(
       effectiveAskChoice(
@@ -140,7 +142,32 @@ describe('selectors', () => {
       provider: 'codex',
       model: 'o3',
       detail: 'detailed',
+      effort: '',
+      fast: false,
     });
+    // Effort and fast mode are remembered per provider; fast falls back to the provider setting.
+    const fastClaude = {
+      ...settings,
+      providers: { ...settings.providers, claude: { ...settings.providers.claude, fast: true } },
+    };
+    expect(
+      effectiveAskChoice(
+        { provider: null, models: {}, detail: null, efforts: { claude: 'max' } },
+        fastClaude,
+      ),
+    ).toMatchObject({ effort: 'max', fast: true });
+    expect(
+      effectiveAskChoice(
+        {
+          provider: null,
+          models: {},
+          detail: null,
+          efforts: { codex: 'high' },
+          fast: { claude: false },
+        },
+        fastClaude,
+      ),
+    ).toMatchObject({ effort: '', fast: false });
     const info = (id: 'kiro' | 'claude' | 'mock', available: boolean) => ({
       id,
       name: id,

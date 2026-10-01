@@ -6,6 +6,8 @@ import {
   defaultAskScope,
   effectiveAskChoice,
   setAskDetail,
+  setAskEffort,
+  setAskFast,
   setAskModel,
   setAskProvider,
   setAskScope,
@@ -68,6 +70,11 @@ export function ConversationAskBar({ graph }: { graph: GraphEntry | undefined })
         onProviderChange={setAskProvider}
         onModelChange={setAskModel}
         onDetailChange={setAskDetail}
+        effort={choice.effort}
+        defaultEffort={settings?.providers[choice.provider].effort}
+        fast={choice.fast}
+        onEffortChange={setAskEffort}
+        onFastChange={setAskFast}
         onSubmit={(question) => submitAsk(question, scope)}
         busy={askBusy}
         focusSignal={askFocus}

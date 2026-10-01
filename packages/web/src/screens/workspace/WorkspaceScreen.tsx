@@ -13,6 +13,8 @@ import {
   openDialog,
   openWorkspaceConversations,
   setAskDetail,
+  setAskEffort,
+  setAskFast,
   setAskModel,
   setAskProvider,
   useAppStore,
@@ -142,6 +144,11 @@ function WorkspaceHome({ workspace }: { workspace: Workspace }) {
             onProviderChange={setAskProvider}
             onModelChange={setAskModel}
             onDetailChange={setAskDetail}
+            effort={choice.effort}
+            defaultEffort={settings?.providers[choice.provider].effort}
+            fast={choice.fast}
+            onEffortChange={setAskEffort}
+            onFastChange={setAskFast}
             onSubmit={ask}
             busy={askBusy}
             focusSignal={askFocus}

@@ -126,6 +126,10 @@ export interface AskPrefs {
   models: Partial<Record<ProviderId, string>>;
   /** null = settings.detail */
   detail: DetailLevel | null;
+  /** Last effort per provider ('' = the provider setting). */
+  efforts?: Partial<Record<ProviderId, string>>;
+  /** Last fast-mode choice per provider (absent = the provider setting). */
+  fast?: Partial<Record<ProviderId, boolean>>;
 }
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline';

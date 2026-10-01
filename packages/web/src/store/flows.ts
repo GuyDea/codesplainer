@@ -9,6 +9,7 @@ import {
   findNode,
   getGraph,
   graphDisplayTitle,
+  PROVIDER_RUN_OPTIONS,
   slugify,
   toMermaid,
   truncate,
@@ -69,10 +70,17 @@ function context() {
   return { s, conversation, graph, workspace };
 }
 
-function askExtras(): Pick<AskBody, 'provider' | 'model' | 'detail'> {
+function askExtras(): Pick<AskBody, 'provider' | 'model' | 'detail' | 'effort' | 'fast'> {
   const s = getState();
   const choice = effectiveAskChoice(s.askPrefs, s.settings, s.providers);
-  return { provider: choice.provider, model: choice.model || undefined, detail: choice.detail };
+  const options = PROVIDER_RUN_OPTIONS[choice.provider];
+  return {
+    provider: choice.provider,
+    model: choice.model || undefined,
+    detail: choice.detail,
+    effort: options.efforts.includes(choice.effort) ? choice.effort : undefined,
+    fast: options.fast ? choice.fast : undefined,
+  };
 }
 
 // ---- navigation ------------------------------------------------------------------------------
@@ -293,6 +301,18 @@ export function setAskModel(model: string): void {
   const s = getState();
   const provider = effectiveAskChoice(s.askPrefs, s.settings, s.providers).provider;
   setAskPrefs({ models: { ...s.askPrefs.models, [provider]: model } });
+}
+
+export function setAskEffort(effort: string): void {
+  const s = getState();
+  const provider = effectiveAskChoice(s.askPrefs, s.settings, s.providers).provider;
+  setAskPrefs({ efforts: { ...s.askPrefs.efforts, [provider]: effort } });
+}
+
+export function setAskFast(fast: boolean): void {
+  const s = getState();
+  const provider = effectiveAskChoice(s.askPrefs, s.settings, s.providers).provider;
+  setAskPrefs({ fast: { ...s.askPrefs.fast, [provider]: fast } });
 }
 
 export function setAskDetail(detail: DetailLevel): void {

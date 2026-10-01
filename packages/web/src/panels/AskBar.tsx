@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUp, ChevronDown, LoaderCircle, Pencil, SlidersHorizontal } from 'lucide-react';
+import {
+  ArrowUp,
+  ChevronDown,
+  Gauge,
+  LoaderCircle,
+  Pencil,
+  SlidersHorizontal,
+  Zap,
+} from 'lucide-react';
 import {
   DETAIL_LEVELS,
   DETAIL_LEVEL_INFO,
   PROVIDER_LABELS,
+  PROVIDER_RUN_OPTIONS,
   truncate,
   type DetailLevel,
 } from '@codesplainer/shared';
@@ -18,6 +27,7 @@ import {
   scopeLabel,
   scopePlaceholder,
 } from './helpers';
+import { ACTIVE_ICON_BUTTON } from './parts';
 import type { AskBarProps } from './types';
 
 const MAX_ROWS = 6;
@@ -28,7 +38,7 @@ const DETAIL_HINT = (d: DetailLevel) =>
   `${DETAIL_LEVEL_INFO[d].min}–${DETAIL_LEVEL_INFO[d].max} boxes`;
 
 /**
- * Question input with scope, agent, model and detail pickers. Enter sends, Shift+Enter adds a
+ * Question input with scope, agent, model, effort, fast mode and detail pickers. Enter sends, Shift+Enter adds a
  * line, Esc blurs. 'bar' fits a bottom bar (menus open upwards); 'hero' is a large centered card
  * (max-w-2xl) for the workspace home.
  */
@@ -43,6 +53,11 @@ export function AskBar({
   onProviderChange,
   onModelChange,
   onDetailChange,
+  effort = '',
+  defaultEffort = '',
+  fast = false,
+  onEffortChange,
+  onFastChange,
   onSubmit,
   busy,
   focusSignal,
@@ -238,6 +253,29 @@ export function AskBar({
     { id: 'custom', label: 'Custom model…', icon: Pencil, onSelect: () => setCustomModel(model) },
   ];
 
+  // ---- effort / fast ----
+  const runOptions = PROVIDER_RUN_OPTIONS[provider];
+  const showEffort = Boolean(onEffortChange) && runOptions.efforts.length > 0;
+  const showFast = Boolean(onFastChange) && runOptions.fast;
+  const effortItems: MenuItem[] = [
+    { type: 'label', id: 'label', label: 'Effort' },
+    {
+      id: 'default',
+      label: 'Default',
+      hint: defaultEffort || undefined,
+      checked: !effort,
+      onSelect: () => onEffortChange?.(''),
+    },
+    ...runOptions.efforts.map((e): MenuItem => ({
+      id: `effort:${e}`,
+      label: e,
+      checked: effort === e,
+      onSelect: () => onEffortChange?.(e),
+    })),
+  ];
+  // "Effort" rather than "Default" next to the model picker, which already says "Default".
+  const effortName = effort || 'Effort';
+
   const detailItems: MenuItem[] = [
     { type: 'label', id: 'label', label: 'Detail' },
     ...DETAIL_LEVELS.map((d): MenuItem => ({
@@ -346,6 +384,37 @@ export function AskBar({
               </Tooltip>
             </Menu>
           )}
+
+          {showEffort ? (
+            <Menu items={effortItems} side={menuSide} align="end" minWidth={180}>
+              <Tooltip label={`Effort: ${effort || defaultEffort || 'default'}`}>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  icon={Gauge}
+                  iconRight={compact ? undefined : ChevronDown}
+                  aria-label={`Effort: ${effort || 'Default'}`}
+                  aria-haspopup="menu"
+                  className={cn(effort && 'text-accent')}
+                >
+                  {compact ? null : effortName}
+                </Button>
+              </Tooltip>
+            </Menu>
+          ) : null}
+
+          {showFast ? (
+            <IconButton
+              icon={Zap}
+              label={fast ? 'Fast mode: on (faster, costs more)' : 'Fast mode: off'}
+              aria-pressed={fast}
+              active={fast}
+              size="sm"
+              tooltipSide={hero ? 'bottom' : 'top'}
+              onClick={() => onFastChange?.(!fast)}
+              className={cn(fast && ACTIVE_ICON_BUTTON)}
+            />
+          ) : null}
 
           {compact ? (
             <Menu items={detailItems} side={menuSide} align="end">

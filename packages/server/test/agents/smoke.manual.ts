@@ -229,7 +229,7 @@ function report(label: string, saved: Saved): void {
     Math.max(0, ...xs.map((x) => wordCount(x ?? '')));
   console.log(
     `valid ✓  kind=${spec.kind} nodes=${spec.nodes.length} edges=${spec.edges.length} groups=${spec.groups.length} ` +
-      `highlight=${spec.nodes.filter((n) => n.highlight).length} suggestions=${spec.suggestions.length}`,
+      `highlight=${spec.nodes.filter((n) => n.highlight).length}`,
   );
   console.log(
     `words: title=${wordCount(spec.title)} label<=${maxWords(spec.nodes.map((n) => n.label))} ` +
@@ -249,7 +249,6 @@ function report(label: string, saved: Saved): void {
     console.log(
       `  ${e.from} -> ${e.to} ${e.label ?? ''} (${e.kind}${e.step ? ` #${e.step}` : ''})`,
     );
-  console.log('suggestions:', spec.suggestions);
   console.log(
     'activity:',
     saved.activity.slice(0, 25).map((a) => `${a.kind}: ${a.text}`),

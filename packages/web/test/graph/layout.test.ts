@@ -27,7 +27,6 @@ const chain: GraphSpec = {
     { id: 'bc', from: 'b', to: 'c', kind: 'write' },
   ],
   groups: [],
-  suggestions: [],
 };
 
 const center = (r: Rect) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 });

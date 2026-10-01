@@ -72,6 +72,7 @@ describe('normalizeGraphSpec', () => {
         { from: 'ui', to: 'api', label: 'fetch', kind: 'call' },
         { from: 'api', to: 'db', label: 'SQL', kind: 'read' },
       ],
+      // Dropped: Codesplainer no longer shows follow-up suggestions.
       suggestions: ['How is auth done?'],
     });
     expect(r.ok).toBe(true);
@@ -79,7 +80,7 @@ describe('normalizeGraphSpec', () => {
     expect(r.spec.nodes.map((n) => n.id)).toEqual(['ui', 'api', 'db']);
     expect(r.spec.nodes[2]?.expandable).toBe(false);
     expect(r.spec.edges[0]).toMatchObject({ from: 'ui', to: 'api', kind: 'call', label: 'fetch' });
-    expect(r.spec.suggestions).toEqual(['How is auth done?']);
+    expect(r.spec).not.toHaveProperty('suggestions');
     expect(r.warnings).toEqual([]);
   });
 

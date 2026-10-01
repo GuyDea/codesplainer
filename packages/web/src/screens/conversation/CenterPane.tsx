@@ -16,13 +16,11 @@ import { Breadcrumbs } from '../../panels/Breadcrumbs';
 import { DiagramHeader } from '../../panels/DiagramHeader';
 import { ErrorView } from '../../panels/ErrorView';
 import { ProgressView } from '../../panels/ProgressView';
-import { Suggestions } from '../../panels/Suggestions';
 import { shortcutLabel } from '../../lib/platform';
 import type { AppView } from '../../lib/router';
 import { useStableJson } from '../../lib/useStable';
 import {
   askAboutNode,
-  askSuggestion,
   buildNodeChildren,
   cancelDiagram,
   conversationMapRef,
@@ -231,13 +229,6 @@ function DiagramArea({
         />
         {legendVisible ? <Legend spec={spec} className="absolute top-3 right-3 z-10" /> : null}
       </div>
-      {spec.suggestions.length ? (
-        <Suggestions
-          suggestions={spec.suggestions}
-          onPick={(q) => void askSuggestion(q)}
-          className="shrink-0"
-        />
-      ) : null}
     </>
   );
 }

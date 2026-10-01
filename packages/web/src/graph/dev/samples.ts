@@ -88,7 +88,6 @@ export const architectureSpec: GraphSpec = {
     { id: 'frontend', label: 'Browser' },
     { id: 'backend', label: 'Local server' },
   ],
-  suggestions: ['How is the prompt built?', 'Where are diagrams stored?'],
 };
 
 export const flowSpec: GraphSpec = {
@@ -159,7 +158,6 @@ export const flowSpec: GraphSpec = {
     { id: 'f8', from: 'save', to: 'render', kind: 'event', label: 'graph.done', step: 6 },
   ],
   groups: [],
-  suggestions: [],
 };
 
 export const sequenceSpec: GraphSpec = {
@@ -216,7 +214,6 @@ export const sequenceSpec: GraphSpec = {
     { id: 's10', from: 'ui', to: 'user', kind: 'data', label: 'shows diagram', step: 10 },
   ],
   groups: [],
-  suggestions: [],
 };
 
 const pkg = (
@@ -299,7 +296,6 @@ export const bigSpec: GraphSpec = {
     { id: 'apps', label: 'Apps' },
     { id: 'foundation', label: 'Foundation' },
   ],
-  suggestions: [],
 };
 
 export const stateSpec: GraphSpec = {
@@ -328,7 +324,6 @@ export const stateSpec: GraphSpec = {
     { id: 't6', from: 'running', to: 'running', kind: 'event', label: 'activity' },
   ],
   groups: [],
-  suggestions: [],
 };
 
 const storeSpec: GraphSpec = {
@@ -369,7 +364,6 @@ const storeSpec: GraphSpec = {
     { id: 'c4', from: 'store', to: 'schema', kind: 'dependency', label: 'validates' },
   ],
   groups: [],
-  suggestions: [],
 };
 
 const runnerSpec: GraphSpec = {
@@ -396,7 +390,6 @@ const runnerSpec: GraphSpec = {
     { id: 'r4', from: 'parse', to: 'emit', kind: 'event', step: 4 },
   ],
   groups: [],
-  suggestions: [],
 };
 
 function entry(

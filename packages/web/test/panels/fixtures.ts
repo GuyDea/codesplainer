@@ -42,7 +42,6 @@ export const spec: GraphSpec = {
     { id: 'e2', from: 'api', to: 'db', kind: 'write', label: 'insert rows' },
   ],
   groups: [],
-  suggestions: ['Where is auth handled?', 'How are errors reported?'],
 };
 
 export function entry(

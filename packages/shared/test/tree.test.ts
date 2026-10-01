@@ -44,7 +44,6 @@ const spec: GraphSpec = {
     { id: 'e2', from: 'api', to: 'db', kind: 'write' },
   ],
   groups: [{ id: 'be', label: 'Backend' }],
-  suggestions: ['Where is auth?'],
 };
 
 function entry(

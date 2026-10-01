@@ -36,7 +36,6 @@ export const FAKE_DIAGRAM = {
   ],
   edges: [{ from: 'app', to: 'db', label: 'writes', kind: 'write', step: null }],
   groups: [],
-  suggestions: ['What is stored?'],
 };
 
 const COMMON = `

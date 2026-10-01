@@ -118,8 +118,6 @@ export function conversationToMarkdown(conv: Conversation, options: MarkdownOpti
       out.push('');
     }
     if (entry.note) out.push(`> **Note:** ${entry.note.replace(/\n/g, '\n> ')}`, '');
-    if (spec.suggestions.length)
-      out.push(`**Next questions:** ${spec.suggestions.map((s) => `_${s}_`).join(' · ')}`, '');
   });
   return `${out.join('\n').trimEnd()}\n`;
 }

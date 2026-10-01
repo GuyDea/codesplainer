@@ -80,7 +80,6 @@ interface RawSpec {
   nodes: RawNode[];
   edges: RawEdge[];
   groups: { id: string; label: string }[];
-  suggestions: string[];
 }
 
 type NodeInput = Partial<Omit<RawNode, 'label' | 'kind'>> & { label: string; kind: NodeKind };
@@ -455,13 +454,6 @@ function labelOf(draft: Draft, id: string | undefined): string {
   return draft.nodes.find((n) => n.id === id)?.label ?? '';
 }
 
-function suggestionsFor(labels: string[], extra: string[]): string[] {
-  const out = labels
-    .slice(0, 2)
-    .map((l, i) => (i === 0 ? `How does ${l} work?` : `What does ${l} do?`));
-  return [...out, ...extra].map((s) => words(s, 8)).slice(0, 4);
-}
-
 // ---- diagrams -------------------------------------------------------------------------------
 
 async function overviewDiagram(scan: Scan, max: number, workspaceName: string): Promise<RawSpec> {
@@ -531,10 +523,6 @@ async function overviewDiagram(scan: Scan, max: number, workspaceName: string): 
       `Demo diagram built from folders and imports, no AI. ${main ? `${main} is the most connected part.` : ''}${more}`.trim(),
     kind: 'architecture',
     direction: 'LR',
-    suggestions: suggestionsFor(
-      top.map((id) => labelOf(draft, id)),
-      ['Where does execution start?'],
-    ),
   });
 }
 
@@ -581,10 +569,6 @@ async function dirDiagram(
     summary: `Demo (no AI): the parts of ${box} and their imports.${main ? ` ${main} is the most connected.` : ''}${hidden ? ` ${hidden} more not shown.` : ''}`,
     kind: 'architecture',
     direction: 'LR',
-    suggestions: suggestionsFor(
-      top.map((id) => labelOf(draft, id)),
-      [`What depends on ${box}?`],
-    ),
   });
 }
 
@@ -656,10 +640,6 @@ function symbolDiagram(
     summary,
     kind: allTypes ? 'structure' : 'architecture',
     direction: allTypes ? 'TB' : 'LR',
-    suggestions: suggestionsFor(
-      top.map((id) => labelOf(draft, id)),
-      ['Where is this file used?'],
-    ),
   });
 }
 
@@ -809,7 +789,6 @@ async function rangeFlow(
     summary: `Demo (no AI): the main statements of lines ${start}-${last}, in order.`,
     kind: 'flow',
     direction: 'TB',
-    suggestions: ['What calls this code?', 'Which errors can happen here?'],
   });
 }
 
@@ -833,7 +812,6 @@ function genericFlow(scan: Scan, label: string, why?: string): RawSpec {
     summary: `Demo (no AI): ${why ?? `"${label}" has no code location, so this is a generic sketch.`}`,
     kind: 'flow',
     direction: 'TB',
-    suggestions: [`Where is ${words(label, 3)} implemented?`],
   });
 }
 
@@ -924,7 +902,6 @@ async function askAboutBox(
     summary: `Demo answer (no AI), sketched from the code of ${node?.label ?? fallback}.`,
     kind: 'flow',
     direction: 'LR',
-    suggestions: [`Explain ${words(node?.label ?? fallback, 3)} in depth`, 'What calls it?'],
   });
 }
 

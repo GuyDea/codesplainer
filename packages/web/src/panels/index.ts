@@ -10,7 +10,6 @@ export { AskBar } from './AskBar';
 export { ProgressView } from './ProgressView';
 export { ErrorView, SETTINGS_ERROR_PATTERN } from './ErrorView';
 export { ActivityLog } from './ActivityLog';
-export { Suggestions } from './Suggestions';
 export {
   ACTIVITY_VISUALS,
   DotOff,

@@ -47,7 +47,7 @@ function node(id: string, refs: CodeRef[]): GraphNode {
 }
 
 function spec(nodes: GraphNode[]): GraphSpec {
-  return { title: 'T', kind: 'architecture', nodes, edges: [], groups: [], suggestions: [] };
+  return { title: 'T', kind: 'architecture', nodes, edges: [], groups: [] };
 }
 
 async function resolveOne(ref: CodeRef): Promise<{ refs: CodeRef[]; warnings: string[] }> {

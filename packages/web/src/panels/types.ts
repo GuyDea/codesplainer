@@ -198,9 +198,3 @@ export interface ActivityLogProps {
   live?: boolean;
   className?: string;
 }
-
-export interface SuggestionsProps {
-  suggestions: string[];
-  onPick: (question: string) => void;
-  className?: string;
-}

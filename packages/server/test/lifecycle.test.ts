@@ -44,7 +44,6 @@ function entry(id: string, status: GraphEntry['status']): GraphEntry {
             nodes: [{ id: 'a', label: 'A', kind: 'module', refs: [], expandable: true }],
             edges: [],
             groups: [],
-            suggestions: [],
           },
         }
       : {}),

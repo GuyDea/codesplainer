@@ -28,7 +28,6 @@ export const spec: GraphSpec = {
     { id: 'e2', from: 'api', to: 'db', kind: 'write' },
   ],
   groups: [],
-  suggestions: ['Where is auth?'],
 };
 
 export function graph(id: string, extra: Partial<GraphEntry> = {}): GraphEntry {

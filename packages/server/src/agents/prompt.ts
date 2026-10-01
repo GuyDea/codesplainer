@@ -114,7 +114,6 @@ const EXAMPLE = JSON.stringify({
     },
   ],
   groups: [],
-  suggestions: ['How is the cart validated?', 'Where are payments handled?'],
 });
 
 function vocabulary(kinds: readonly string[], info: Record<string, { hint: string }>): string {
@@ -131,8 +130,7 @@ function buildSystemPrompt(): string {
     '3. One altitude: all boxes of a diagram are on the same level of abstraction.',
     '4. highlight: true for the 1-3 boxes that answer the question, false for all others.',
     '5. Groups only when they clarify (max 4 groups); otherwise groups: [] and every group: null.',
-    '6. suggestions: 2-4 short follow-up questions (max 8 words each) worth asking next.',
-    '7. Only state what you verified in the code. Never invent components, paths or line numbers.',
+    '6. Only state what you verified in the code. Never invent components, paths or line numbers.',
     '',
     '## Altitude',
     'Pick the abstraction level that fits the scope of the request:',
@@ -163,7 +161,7 @@ function buildSystemPrompt(): string {
     '- Be efficient: start from the tree in the task, read manifests and entry points, search (grep/glob) for names instead of reading whole directories, and read only what this one diagram needs.',
     '',
     '## Language',
-    'Write title, summary, labels, details and suggestions in the answer language named in the task. Keep code identifiers as they are.',
+    'Write title, summary, labels and details in the answer language named in the task. Keep code identifiers as they are.',
     '',
     '## Output',
     'Reply with ONLY the JSON object: no prose, no markdown fences. All keys are required; use "", null or [] when empty. Shape and style example:',

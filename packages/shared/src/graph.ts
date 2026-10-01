@@ -78,8 +78,6 @@ export const graphSpecSchema = z.object({
   nodes: z.array(graphNodeSchema).min(1),
   edges: z.array(graphEdgeSchema).default([]),
   groups: z.array(graphGroupSchema).default([]),
-  /** Short follow-up questions the user may want to ask next. */
-  suggestions: z.array(z.string()).default([]),
 });
 export type GraphSpec = z.infer<typeof graphSpecSchema>;
 
@@ -749,21 +747,6 @@ export function normalizeGraphSpec(input: unknown): NormalizeResult {
     nodes,
     edges,
     groups: usedGroups,
-    suggestions: arr(
-      pick(root, [
-        'suggestions',
-        'followUps',
-        'follow_ups',
-        'followups',
-        'questions',
-        'nextQuestions',
-        'next_questions',
-      ]),
-    )
-      .map((s) => (isObj(s) ? str(pick(s, ['question', 'text', 'label'])) : str(s)))
-      .filter((s): s is string => Boolean(s))
-      .slice(0, GRAPH_LIMITS.maxSuggestions)
-      .map((s) => truncate(s, GRAPH_LIMITS.suggestionChars)),
   };
   const summary = str(
     pick(root, ['summary', 'answer', 'tldr', 'tl_dr', 'description', 'explanation', 'overview']),

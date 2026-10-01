@@ -285,13 +285,6 @@ export async function explainEdge(edgeId: string): Promise<void> {
   await submitAsk(question, { type: 'graph', graphId: graph.id, title: graphDisplayTitle(graph) });
 }
 
-/** Suggestion chip: follow-up about the current diagram. */
-export async function askSuggestion(question: string): Promise<void> {
-  const { graph } = context();
-  if (!graph) return;
-  await submitAsk(question, { type: 'graph', graphId: graph.id, title: graphDisplayTitle(graph) });
-}
-
 export function setAskProvider(provider: ProviderId): void {
   setAskPrefs({ provider });
 }

@@ -74,7 +74,6 @@ describe('sequenceLayout', () => {
         { id: 'm', from: 'a', to: 'b', kind: 'call', label: 'a considerably long message label' },
       ],
       groups: [],
-      suggestions: [],
     };
     const l = sequenceLayout(spec);
     const m = l.messages[0]!;

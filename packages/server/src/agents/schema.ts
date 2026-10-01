@@ -32,7 +32,7 @@ const REF_ITEM_SCHEMA = {
 export const GRAPH_OUTPUT_SCHEMA: Record<string, unknown> = {
   type: 'object',
   additionalProperties: false,
-  required: ['title', 'summary', 'kind', 'direction', 'nodes', 'edges', 'groups', 'suggestions'],
+  required: ['title', 'summary', 'kind', 'direction', 'nodes', 'edges', 'groups'],
   properties: {
     title: { type: 'string', description: 'Diagram title, max 6 words.' },
     summary: { type: 'string', description: 'Direct answer, 1-2 short sentences.' },
@@ -107,11 +107,6 @@ export const GRAPH_OUTPUT_SCHEMA: Record<string, unknown> = {
           label: { type: 'string', description: '1-3 words.' },
         },
       },
-    },
-    suggestions: {
-      type: 'array',
-      description: '2-4 short follow-up questions (max 8 words each).',
-      items: { type: 'string' },
     },
   },
 };

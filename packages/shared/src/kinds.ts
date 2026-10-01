@@ -111,14 +111,12 @@ export const GRAPH_LIMITS = {
   maxGroups: 6,
   maxRefsPerNode: 5,
   maxRefsPerEdge: 3,
-  maxSuggestions: 4,
   titleChars: 70,
   summaryChars: 260,
   labelChars: 40,
   detailChars: 120,
   edgeLabelChars: 32,
   groupLabelChars: 40,
-  suggestionChars: 90,
   symbolChars: 120,
 } as const;
 

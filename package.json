@@ -20,6 +20,7 @@
     "prebuild": "node scripts/doctor.mjs --quiet",
     "build": "npm run build -w @codesplainer/web && npm run build -w @codesplainer/server",
     "start": "node packages/server/dist/index.js",
+    "pack:npm": "npm run build && node scripts/pack-npm.mjs",
     "predesktop": "node scripts/doctor.mjs --quiet",
     "desktop": "npm run build -w @codesplainer/web && npm run build -w @codesplainer/desktop && npm run start -w @codesplainer/desktop",
     "predist:desktop": "node scripts/doctor.mjs --quiet",

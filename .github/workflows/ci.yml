@@ -26,8 +26,9 @@ jobs:
       - name: Typecheck, lint and test
         run: npm run check
       - run: npm run format:check
-      - name: Build the CLI, the desktop bundle and the Pages site
+      - name: Build the CLI, the npm package, the desktop bundle and the Pages site
         run: |
           npm run build
+          node scripts/pack-npm.mjs
           npm run build -w @codesplainer/desktop
           npm run build:pages

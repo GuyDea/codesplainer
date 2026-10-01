@@ -15,7 +15,7 @@ const outDir = `${root}npm-dist/`;
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 const rootPkg = await readJson(`${root}package.json`);
 const serverPkg = await readJson(`${serverDir}package.json`);
-const { version } = await readJson(`${root}packages/desktop/package.json`);
+const { version } = rootPkg;
 
 if (!existsSync(`${serverDir}dist/index.js`) || !existsSync(`${serverDir}dist/public/index.html`)) {
   console.error('packages/server/dist is missing or has no UI: run `npm run build` first.');

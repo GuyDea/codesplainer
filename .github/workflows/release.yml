@@ -30,15 +30,13 @@ jobs:
       - name: The tag matches the app version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          version="$(node -p "require('./packages/desktop/package.json').version")"
+          version="$(node -p "require('./package.json').version")"
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match packages/desktop/package.json (v$version)."
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json (v$version). Release with \`npm version <x.y.z>\`."
             exit 1
           fi
-          if ! grep -q "APP_VERSION = '$version'" packages/shared/src/version.ts; then
-            echo "::error::APP_VERSION in packages/shared/src/version.ts is not $version."
-            exit 1
-          fi
+      - name: Every package is at the app version
+        run: npm run version:check
       - run: npm ci
       - run: npm run check
 

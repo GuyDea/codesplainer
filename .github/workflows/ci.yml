@@ -26,6 +26,8 @@ jobs:
       - name: Typecheck, lint and test
         run: npm run check
       - run: npm run format:check
+      - name: Every package is at the app version
+        run: npm run version:check
       - name: Build the CLI, the npm package, the desktop bundle and the Pages site
         run: |
           npm run build

@@ -184,19 +184,18 @@ scripts/    dev runner, doctor (environment checks), Pages build
 
 ## Releasing
 
-[CI](.github/workflows/ci.yml) runs `npm run check` and the format check, and builds the CLI, the npm package, the desktop bundle and the Pages site on every push to `main` and on pull requests. Releases come from [release.yml](.github/workflows/release.yml):
+[CI](.github/workflows/ci.yml) runs `npm run check`, the format check and `npm run version:check`, and builds the CLI, the npm package, the desktop bundle and the Pages site on every push to `main` and on pull requests. Releases come from [release.yml](.github/workflows/release.yml):
 
-1. Set the new version in every package and in `APP_VERSION`, commit, then tag and push:
+1. Bump the version on a clean `main`, then push the commit and the tag:
 
    ```bash
-   npm version 0.2.0 --workspaces --include-workspace-root --no-git-tag-version
-   # and set APP_VERSION = '0.2.0' in packages/shared/src/version.ts
-   git commit -am "Release 0.2.0"
-   git tag v0.2.0
-   git push origin main v0.2.0
+   npm version 0.2.0          # or: npm version patch | minor | major
+   git push --follow-tags
    ```
 
-2. The workflow checks that the tag matches both versions, runs `npm run check`, builds the installers on macOS, Windows and Linux, and attaches them to a draft release. Once the installers have built, it publishes the CLI to npm as `codesplainer` (with provenance).
+   The root `package.json` holds the app version. `npm version` runs [scripts/sync-version.mjs](scripts/sync-version.mjs), which copies it to every workspace package, `package-lock.json` and `APP_VERSION`, and then commits and tags `v0.2.0`. Don't edit the versions by hand; if they drift, `node scripts/sync-version.mjs` puts them back in line.
+
+2. The workflow checks that the tag matches the version and that every package has it, runs `npm run check`, builds the installers on macOS, Windows and Linux, and attaches them to a draft release. Once the installers have built, it publishes the CLI to npm as `codesplainer` (with provenance).
 3. Review the draft on the Releases page and publish it. The download page links to `releases/latest/download/<file>`, so it offers the new installers as soon as the release is published.
 
 To try the installers without a release, start the workflow by hand (**Actions → Release → Run workflow**); the installers are kept as workflow artifacts for 14 days, and the npm step only does `npm publish --dry-run`. The builds are unsigned, apart from an ad-hoc signature on macOS.

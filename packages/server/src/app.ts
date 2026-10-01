@@ -13,6 +13,7 @@ import type { AppContext } from './context';
 import { EventBus, SseHub, registerEventRoutes } from './events';
 import { IgnoreRulesCache } from './fs/ignore';
 import { OverviewCache } from './fs/overview';
+import { systemFolderPicker, type FolderPicker } from './fs/picker';
 import type { ScanOptions } from './fs/scan';
 import { registerJsonParser } from './http/body';
 import { registerErrorHandler } from './http/errors';
@@ -36,6 +37,8 @@ export interface AppOverrides {
   /** Debounce of conversation saves (default 300 ms). */
   saveDebounceMs?: number;
   scanOptions?: ScanOptions;
+  /** Native folder dialog (default: zenity / kdialog / osascript / PowerShell). */
+  folderPicker?: FolderPicker;
 }
 
 export interface CodesplainerApp {
@@ -108,6 +111,7 @@ export async function createApp(
     workspaces: workspaceService,
     conversations: conversationService,
     exchange,
+    folderPicker: overrides.folderPicker ?? systemFolderPicker,
   };
 
   const app = Fastify({

@@ -5,7 +5,15 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/.vite/**'],
+    ignores: [
+      '**/dist/**',
+      '**/dist-pages/**',
+      '**/release/**',
+      'site-dist/**',
+      '**/node_modules/**',
+      '**/coverage/**',
+      '**/.vite/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -23,11 +31,16 @@ export default tseslint.config(
     files: [
       'packages/server/**/*.ts',
       'packages/shared/**/*.ts',
+      'packages/desktop/**/*.ts',
       'scripts/**/*.mjs',
       '*.js',
       '*.ts',
     ],
     languageOptions: { globals: { ...globals.node } },
+  },
+  {
+    files: ['site/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
   },
   {
     files: ['packages/web/**/*.{ts,tsx}'],

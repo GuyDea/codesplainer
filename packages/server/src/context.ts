@@ -4,6 +4,7 @@ import type { ServerConfig } from './config';
 import type { EventBus, SseHub } from './events';
 import type { IgnoreRulesCache } from './fs/ignore';
 import type { OverviewCache } from './fs/overview';
+import type { FolderPicker } from './fs/picker';
 import type { GenerationService } from './jobs/generation';
 import type { Logger } from './log';
 import type { ConversationService } from './services/conversations';
@@ -34,6 +35,8 @@ export interface AppContext {
   workspaces: WorkspaceService;
   conversations: ConversationService;
   exchange: ExchangeService;
+  /** Native "choose folder" dialog (system dialogs, or the desktop app's own). */
+  folderPicker: FolderPicker;
   /** Workspace made from the folders given on the command line (opened on first load). */
   startupWorkspaceId?: string;
 }

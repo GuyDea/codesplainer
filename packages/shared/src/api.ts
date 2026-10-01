@@ -77,7 +77,7 @@ export interface HealthResponse {
   /** process.platform of the server ("linux", "darwin", "win32"). */
   platform: string;
   homeDir: string;
-  /** A native "choose folder" dialog is available (zenity/kdialog/osascript/powershell). */
+  /** A native "choose folder" dialog is available (desktop app, or zenity/kdialog/osascript/powershell). */
   nativePicker: boolean;
   /** Folders passed on the command line resolved to this workspace (open it on first load). */
   startupWorkspaceId?: string;

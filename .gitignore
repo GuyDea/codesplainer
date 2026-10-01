@@ -1,5 +1,8 @@
 node_modules/
 dist/
+dist-pages/
+site-dist/
+packages/desktop/release/
 coverage/
 *.log
 .DS_Store

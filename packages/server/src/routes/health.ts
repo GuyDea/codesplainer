@@ -3,7 +3,6 @@ import { homedir } from 'node:os';
 import type { FastifyInstance } from 'fastify';
 import { APP_NAME, APP_VERSION, type HealthResponse } from '@codesplainer/shared';
 import type { AppContext } from '../context';
-import { nativePickerAvailable } from '../fs/picker';
 
 export function registerHealthRoutes(app: FastifyInstance, ctx: AppContext): void {
   app.get('/api/health', async (): Promise<HealthResponse> => {
@@ -16,7 +15,7 @@ export function registerHealthRoutes(app: FastifyInstance, ctx: AppContext): voi
       pid: process.pid,
       platform: process.platform,
       homeDir: homedir(),
-      nativePicker: await nativePickerAvailable(),
+      nativePicker: await ctx.folderPicker.available(),
       ...(startup && ctx.stores.workspaces.get(startup) ? { startupWorkspaceId: startup } : {}),
     };
   });

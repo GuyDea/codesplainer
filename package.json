@@ -8,7 +8,8 @@
   "workspaces": [
     "packages/shared",
     "packages/server",
-    "packages/web"
+    "packages/web",
+    "packages/desktop"
   ],
   "engines": {
     "node": ">=22.12"
@@ -19,9 +20,15 @@
     "prebuild": "node scripts/doctor.mjs --quiet",
     "build": "npm run build -w @codesplainer/web && npm run build -w @codesplainer/server",
     "start": "node packages/server/dist/index.js",
+    "predesktop": "node scripts/doctor.mjs --quiet",
+    "desktop": "npm run build -w @codesplainer/web && npm run build -w @codesplainer/desktop && npm run start -w @codesplainer/desktop",
+    "predist:desktop": "node scripts/doctor.mjs --quiet",
+    "dist:desktop": "npm run build -w @codesplainer/web && npm run dist -w @codesplainer/desktop",
+    "prebuild:pages": "node scripts/doctor.mjs --quiet",
+    "build:pages": "npm run build:pages -w @codesplainer/web && node scripts/build-pages.mjs",
     "pretest": "node scripts/doctor.mjs --quiet",
     "test": "vitest run",
-    "typecheck": "tsc -p packages/shared && tsc -p packages/server && tsc -p packages/web",
+    "typecheck": "tsc -p packages/shared && tsc -p packages/server && tsc -p packages/web && tsc -p packages/desktop",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

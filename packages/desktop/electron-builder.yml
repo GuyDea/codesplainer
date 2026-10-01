@@ -1,0 +1,58 @@
+# Packaging for the desktop app (https://www.electron.build/configuration).
+# Builds are unsigned: macOS gets an ad-hoc signature (Apple Silicon refuses to run unsigned
+# code at all), Windows and Linux none. Artifact names carry no version, so the download page
+# can link to https://github.com/<owner>/<repo>/releases/latest/download/<name>.
+appId: io.github.guydea.codesplainer
+productName: Codesplainer
+copyright: Copyright © 2026 GuyDea
+directories:
+  output: release
+  buildResources: build
+# dist/ is one self-contained bundle plus the web UI (see tsup.config.ts): no node_modules.
+files:
+  - dist/**/*
+  - '!dist/**/*.map'
+  - package.json
+asar: true
+npmRebuild: false
+nodeGypRebuild: false
+publish: null
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  identity: '-'
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+dmg:
+  artifactName: ${productName}-mac-${arch}.${ext}
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  artifactName: ${productName}-windows-${arch}.${ext}
+  oneClick: true
+  perMachine: false
+
+linux:
+  category: Development
+  executableName: codesplainer-desktop
+  # The .desktop file is named after desktopName (package.json), which Electron also uses as the
+  # window's app_id / WM_CLASS, so docks match the running window to its launcher.
+  syncDesktopName: true
+  synopsis: Understand any codebase, one diagram at a time
+  maintainer: GuyDea <GuyDea@users.noreply.github.com>
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+appImage:
+  artifactName: ${productName}-linux-${arch}.${ext}
+deb:
+  artifactName: ${productName}-linux-${arch}.${ext}

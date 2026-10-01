@@ -7,6 +7,9 @@
   "bin": {
     "codesplainer": "./dist/index.js"
   },
+  "exports": {
+    "./start": "./src/start.ts"
+  },
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/index.ts --no-open",
     "build": "tsup",

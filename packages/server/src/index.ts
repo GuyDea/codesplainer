@@ -3,14 +3,15 @@
  * Starts the local server, opens the browser and shuts down gracefully on SIGINT/SIGTERM
  * (a second signal forces the exit).
  */
-import { createServer } from 'node:net';
 import { homedir } from 'node:os';
 import open from 'open';
 import { APP_NAME, APP_VERSION, type ProviderInfo } from '@codesplainer/shared';
 import { createApp, type CodesplainerApp } from './app';
 import { resolveConfig, type ServerConfig } from './config';
 import { isHttpError } from './errors';
+import { acquireInstanceLock, type InstanceInfo } from './instance';
 import { consoleLogger } from './log';
+import { portIsFree, serverUrl, urlHost } from './net';
 
 const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
 const paint = (code: number) => (text: string) =>
@@ -25,12 +26,6 @@ const cyan = paint(36);
 function tildify(p: string): string {
   const home = homedir();
   return p === home ? '~' : p.startsWith(`${home}/`) ? `~${p.slice(home.length)}` : p;
-}
-
-/** Host used in URLs: wildcard binds are reached through localhost; IPv6 needs brackets. */
-function urlHost(host: string): string {
-  if (host === '0.0.0.0' || host === '::' || host === '[::]') return 'localhost';
-  return host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
 }
 
 function providerLine(p: ProviderInfo): string {
@@ -60,20 +55,16 @@ function portInUseMessage(config: ServerConfig): string {
   );
 }
 
-/**
- * False when something already listens on host:port. Checked before the data directory is opened,
- * so a second instance started by accident never touches the files of the running one (it would
- * otherwise mark that instance's running diagrams as interrupted). Other errors are left to the
- * real listen() call, which reports them.
- */
-function portIsFree(host: string, port: number): Promise<boolean> {
-  if (port === 0) return Promise.resolve(true);
-  return new Promise((resolve) => {
-    const probe = createServer();
-    probe.once('error', (e: NodeJS.ErrnoException) => resolve(e.code !== 'EADDRINUSE'));
-    probe.once('listening', () => probe.close(() => resolve(true)));
-    probe.listen({ host, port, exclusive: true });
-  });
+/** Another server (CLI, dev server or desktop app) owns the data directory. */
+function alreadyRunningMessage(config: ServerConfig, owner: InstanceInfo): string {
+  const who =
+    owner.kind === 'desktop' ? `The ${APP_NAME} desktop app` : `Another ${APP_NAME} server`;
+  const where = owner.url ? ` at ${owner.url}` : '';
+  return (
+    `${red('error:')} ${who} (pid ${owner.pid}) is already running${where} with the data ` +
+    `directory ${tildify(config.dataDir)}. Use that one, stop it, or start this one with ` +
+    '--data-dir <another directory>.'
+  );
 }
 
 async function startupWorkspace(server: CodesplainerApp, config: ServerConfig) {
@@ -98,20 +89,41 @@ async function main(): Promise<void> {
   for (const warning of config.warnings) {
     console.warn(`\n${yellow(bold('  WARNING'))} ${yellow(warning)}\n`);
   }
+  // Both checks run before the data directory is opened, so a second instance started by accident
+  // never touches the files of the running one (it would mark that instance's running diagrams as
+  // interrupted and overwrite its saves).
   if (!(await portIsFree(config.host, config.port))) {
     console.error(portInUseMessage(config));
     process.exitCode = 1;
     return;
   }
+  // A short wait covers restarts (e.g. the dev server's watch mode), where the old process is
+  // still saving.
+  const locked = await acquireInstanceLock(config.dataDir, { kind: 'cli', waitMs: 2_000 });
+  if (!locked.ok) {
+    console.error(alreadyRunningMessage(config, locked.owner));
+    process.exitCode = 1;
+    return;
+  }
+  const lock = locked.lock;
 
-  const server = await createApp(config, { log: consoleLogger });
+  let server: CodesplainerApp;
+  try {
+    server = await createApp(config, { log: consoleLogger });
+  } catch (e) {
+    await lock.release().catch(() => undefined);
+    throw e;
+  }
   let stopping = false;
   const stop = (code: number) => {
     if (stopping) return;
     stopping = true;
     const force = setTimeout(() => process.exit(code || 1), 10_000);
     force.unref();
-    void server.close().finally(() => process.exit(code));
+    void server
+      .close()
+      .finally(() => lock.release())
+      .finally(() => process.exit(code));
   };
   const onSignal = () => {
     if (stopping) {
@@ -155,7 +167,10 @@ async function main(): Promise<void> {
 
   const address = server.app.server.address();
   const port = typeof address === 'object' && address ? address.port : config.port;
-  const url = `http://${urlHost(config.host)}:${port}/`;
+  const url = serverUrl(config.host, port);
+  await lock
+    .setUrl(url)
+    .catch((e: unknown) => consoleLogger.warn(`Could not record the server address: ${String(e)}`));
   const target = workspace ? `${url}#/w/${encodeURIComponent(workspace.id)}` : url;
   console.log(`\n  ${bold(`${APP_NAME} ${APP_VERSION}`)}\n`);
   console.log(`  ${green('➜')}  ${cyan(url)}`);

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'"
+    />
+    <title>Codesplainer: understand any codebase, one diagram at a time</title>
+    <meta
+      name="description"
+      content="Ask a question about your code and get a small diagram back. Codesplainer runs on your machine with the AI coding agent you already use."
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="main.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <a class="brand" href="./">
+        <img src="favicon.svg" alt="" width="28" height="28" />
+        <span>Codesplainer</span>
+      </a>
+      <nav aria-label="Site">
+        <a href="#download">Download</a>
+        <a href="demo/?sample=flow">Demo</a>
+        <a href="https://github.com/GuyDea/codesplainer">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="title">
+        <h1 id="title">Understand any codebase, one diagram at a time.</h1>
+        <p class="lead">
+          Ask a question about your code and get a small diagram back, not a wall of text. Expand
+          any box into a deeper diagram, step through flows, and jump to the lines behind every box
+          and arrow.
+        </p>
+        <p class="actions">
+          <a class="button primary" href="#download">Download</a>
+          <a class="button" href="demo/?sample=flow">Try the demo</a>
+        </p>
+        <p class="note">
+          Codesplainer runs on your machine with the AI coding agent you already have: Kiro CLI,
+          Claude Code, Codex or any ACP agent. Agents read your code locally, read-only. No account,
+          no telemetry.
+        </p>
+      </section>
+
+      <section class="demo" aria-labelledby="demo-title">
+        <h2 id="demo-title">Try it with sample diagrams</h2>
+        <p>
+          These diagrams explain Codesplainer itself. Switch between them with the tabs; on the
+          <em>Flow</em> and <em>Sequence</em> samples, press <kbd>P</kbd> to step through the
+          numbered arrows. In the app, every box and arrow links to your code.
+        </p>
+        <div class="frame">
+          <iframe
+            id="demo-frame"
+            src="demo/?sample=flow"
+            title="Interactive demo with sample Codesplainer diagrams"
+            loading="lazy"
+          ></iframe>
+        </div>
+        <p class="small"><a href="demo/?sample=flow">Open the demo full screen</a></p>
+      </section>
+
+      <section id="download" aria-labelledby="download-title">
+        <h2 id="download-title">Download</h2>
+        <p class="release" id="release-info">
+          Free and open source (MIT).
+          <a href="https://github.com/GuyDea/codesplainer/releases">All releases</a>
+        </p>
+        <div class="platforms">
+          <article class="platform" data-os="mac" aria-labelledby="mac-title">
+            <h3 id="mac-title">macOS</h3>
+            <a
+              class="button primary"
+              data-asset="Codesplainer-mac-arm64.dmg"
+              href="https://github.com/GuyDea/codesplainer/releases/latest/download/Codesplainer-mac-arm64.dmg"
+              >Apple Silicon (.dmg)</a
+            >
+            <a
+              class="button"
+              data-asset="Codesplainer-mac-x64.dmg"
+              href="https://github.com/GuyDea/codesplainer/releases/latest/download/Codesplainer-mac-x64.dmg"
+              >Intel (.dmg)</a
+            >
+            <p class="small">
+              Not signed by Apple yet: open the app once, then go to System Settings → Privacy &amp;
+              Security and click <strong>Open Anyway</strong>.
+            </p>
+          </article>
+          <article class="platform" data-os="windows" aria-labelledby="windows-title">
+            <h3 id="windows-title">Windows</h3>
+            <a
+              class="button primary"
+              data-asset="Codesplainer-windows-x64.exe"
+              href="https://github.com/GuyDea/codesplainer/releases/latest/download/Codesplainer-windows-x64.exe"
+              >Installer (.exe, x64)</a
+            >
+            <p class="small">
+              Not signed yet, so SmartScreen may warn about it: click <strong>More info</strong>,
+              then <strong>Run anyway</strong>.
+            </p>
+          </article>
+          <article class="platform" data-os="linux" aria-labelledby="linux-title">
+            <h3 id="linux-title">Linux</h3>
+            <a
+              class="button primary"
+              data-asset="Codesplainer-linux-amd64.deb"
+              href="https://github.com/GuyDea/codesplainer/releases/latest/download/Codesplainer-linux-amd64.deb"
+              >Debian / Ubuntu (.deb)</a
+            >
+            <a
+              class="button"
+              data-asset="Codesplainer-linux-x86_64.AppImage"
+              href="https://github.com/GuyDea/codesplainer/releases/latest/download/Codesplainer-linux-x86_64.AppImage"
+              >AppImage (x86_64)</a
+            >
+            <p class="small">
+              Install the .deb with <code>sudo apt install ./Codesplainer-linux-amd64.deb</code>.
+              The AppImage needs <code>libfuse2</code> (<code>libfuse2t64</code> on Ubuntu 24.04)
+              and <code>chmod +x</code>.
+            </p>
+          </article>
+        </div>
+        <p class="small">
+          You also need at least one agent CLI installed and logged in:
+          <a href="https://kiro.dev/cli/">Kiro CLI</a>,
+          <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a>,
+          <a href="https://github.com/openai/codex">Codex</a> or any
+          <a href="https://agentclientprotocol.com">ACP</a> agent. Without one, the offline demo
+          provider still lets you try the app.
+        </p>
+      </section>
+
+      <section aria-labelledby="source-title">
+        <h2 id="source-title">Or run it from source</h2>
+        <p>
+          With Node.js 22.12 or newer, the command line version opens Codesplainer in your browser.
+          It shares settings and conversations with the desktop app (<code>~/.codesplainer</code>).
+        </p>
+        <pre><code>git clone https://github.com/GuyDea/codesplainer.git
+cd codesplainer
+npm install
+npm run build
+npm start</code></pre>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Codesplainer is MIT licensed.
+        <a href="https://github.com/GuyDea/codesplainer">Source code</a> ·
+        <a href="https://github.com/GuyDea/codesplainer/issues">Report a problem</a>
+      </p>
+    </footer>
+  </body>
+</html>

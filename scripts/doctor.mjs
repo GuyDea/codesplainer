@@ -63,7 +63,7 @@ function nativeInstalls() {
   const found = [];
   const roots = [
     join(ROOT, 'node_modules'),
-    ...['shared', 'server', 'web'].map((p) => join(ROOT, 'packages', p, 'node_modules')),
+    ...['shared', 'server', 'web', 'desktop'].map((p) => join(ROOT, 'packages', p, 'node_modules')),
   ];
   for (const root of roots) {
     for (const dir of packageDirs(root)) {

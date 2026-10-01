@@ -965,7 +965,8 @@ function GraphCanvasInner(props: GraphCanvasProps) {
               index={stepIndex}
               count={steps.length}
               caption={caption}
-              hasCode={hasStepCode}
+              // Offer the code switch only when someone can show the code.
+              hasCode={hasStepCode && Boolean(props.onStep ?? props.onOpenRef)}
               followCode={followCode}
               onMove={moveStep}
               onJump={(index) => showStep(index)}

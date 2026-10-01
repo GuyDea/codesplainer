@@ -1,0 +1,29 @@
+{
+  "name": "@codesplainer/desktop",
+  "productName": "Codesplainer",
+  "desktopName": "codesplainer-desktop.desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Codesplainer desktop app: the local server and its UI in one window.",
+  "type": "module",
+  "main": "dist/main.js",
+  "author": {
+    "name": "GuyDea",
+    "email": "GuyDea@users.noreply.github.com"
+  },
+  "homepage": "https://guydea.github.io/codesplainer/",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsup",
+    "start": "electron .",
+    "dist": "npm run build && electron-builder --publish never",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@codesplainer/server": "*",
+    "@codesplainer/shared": "*",
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "tsup": "8.5.1"
+  }
+}

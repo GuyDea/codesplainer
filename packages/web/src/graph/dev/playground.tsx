@@ -1,6 +1,8 @@
 /**
  * Dev playground for the graph module (not part of the app build). Open /playground.html on the
  * Vite dev server. URL params: ?sample=architecture|flow|sequence|big|state|map&theme=dark
+ * `vite build --mode pages` turns it into the public demo on GitHub Pages: the developer controls
+ * are hidden and the header links back to the download page.
  */
 import '../../styles.css';
 import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -60,6 +62,10 @@ const CHILDREN: Record<string, Record<string, NodeChildInfo[]>> = {
     ],
   },
 };
+
+/** Built as the public demo (see the file comment). */
+const DEMO = import.meta.env.MODE === 'pages';
+if (DEMO) document.title = 'Codesplainer demo: sample diagrams';
 
 function param(name: string): string | null {
   return new URLSearchParams(location.search).get(name);
@@ -122,7 +128,9 @@ function Playground() {
   return (
     <div className="flex h-full flex-col bg-bg text-fg">
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
-        <span className="mr-2 text-sm font-semibold">Graph playground</span>
+        <span className="mr-2 text-sm font-semibold whitespace-nowrap">
+          {DEMO ? 'Codesplainer demo' : 'Graph playground'}
+        </span>
         <div className="flex items-center gap-0.5 rounded-lg bg-surface-2 p-0.5" role="tablist">
           {Object.entries(SAMPLES).map(([id, s]) => (
             <button
@@ -132,8 +140,8 @@ function Playground() {
               aria-selected={sample === id}
               className={
                 sample === id
-                  ? 'h-7 rounded-md bg-surface px-2.5 text-[13px] font-medium text-fg shadow-card'
-                  : 'h-7 rounded-md px-2.5 text-[13px] text-muted hover:text-fg'
+                  ? 'h-7 rounded-md bg-surface px-2.5 text-[13px] font-medium whitespace-nowrap text-fg shadow-card'
+                  : 'h-7 rounded-md px-2.5 text-[13px] whitespace-nowrap text-muted hover:text-fg'
               }
               onClick={() => {
                 setSample(id);
@@ -147,7 +155,7 @@ function Playground() {
             </button>
           ))}
         </div>
-        <div className="ml-2 flex items-center gap-1 text-[12px] text-muted">
+        <div className={DEMO ? 'hidden' : 'ml-2 flex items-center gap-1 text-[12px] text-muted'}>
           <select
             className="h-7 rounded-md border border-border bg-surface px-1.5 text-[12px]"
             value={direction}
@@ -191,15 +199,27 @@ function Playground() {
           ) : null}
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <span className="max-w-[360px] truncate text-[12px] text-subtle" data-testid="log">
-            {log[0] ?? ''}
-          </span>
-          <Button size="sm" icon={Download} onClick={() => void exportImage('png')}>
-            PNG
-          </Button>
-          <Button size="sm" onClick={() => void exportImage('svg')}>
-            SVG
-          </Button>
+          {DEMO ? (
+            <a
+              href="../#download"
+              target="_top"
+              className="mr-1 text-[13px] font-medium whitespace-nowrap text-accent hover:underline"
+            >
+              Get Codesplainer
+            </a>
+          ) : (
+            <>
+              <span className="max-w-[360px] truncate text-[12px] text-subtle" data-testid="log">
+                {log[0] ?? ''}
+              </span>
+              <Button size="sm" icon={Download} onClick={() => void exportImage('png')}>
+                PNG
+              </Button>
+              <Button size="sm" onClick={() => void exportImage('svg')}>
+                SVG
+              </Button>
+            </>
+          )}
           <IconButton icon={dark ? Sun : Moon} label="Toggle theme" onClick={toggleTheme} />
         </div>
       </header>
@@ -221,10 +241,15 @@ function Playground() {
                 setSelectedEdge(id);
                 push(`select edge ${id}`);
               }}
-              onExpandNode={(id) => push(`expand ${id}`)}
-              onAskNode={(id) => push(`ask ${id}`)}
-              onOpenRef={(ref: CodeRef) => push(`open ${refTitle(ref)}`)}
-              onOpenChild={(id) => push(`open child ${id}`)}
+              // The demo has no agent and no code to show: leave out actions that would do nothing.
+              {...(DEMO
+                ? {}
+                : {
+                    onExpandNode: (id: string) => push(`expand ${id}`),
+                    onAskNode: (id: string) => push(`ask ${id}`),
+                    onOpenRef: (ref: CodeRef) => push(`open ${refTitle(ref)}`),
+                    onOpenChild: (id: string) => push(`open child ${id}`),
+                  })}
               nodeChildren={children}
               showMinimap={minimap}
               multiFolder={multiFolder}

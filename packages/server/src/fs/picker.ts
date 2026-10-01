@@ -95,6 +95,17 @@ function picker(): Promise<Picker | undefined> {
   return cached;
 }
 
+/**
+ * The folder dialog behind POST /api/fs/pick-folder and `nativePicker` in GET /api/health.
+ * The server uses the system dialogs below; the desktop app passes its own (createApp overrides).
+ */
+export interface FolderPicker {
+  /** Whether a dialog can be shown. */
+  available(): Promise<boolean>;
+  /** Show it; resolves with the chosen absolute paths ([] when cancelled). */
+  pick(): Promise<string[]>;
+}
+
 /** Whether a native folder dialog can be shown (detected once). */
 export async function nativePickerAvailable(): Promise<boolean> {
   return (await picker()) !== undefined;
@@ -125,3 +136,9 @@ export async function pickFolders(): Promise<string[]> {
     open = false;
   }
 }
+
+/** zenity / kdialog / osascript / PowerShell (see the top of this file). */
+export const systemFolderPicker: FolderPicker = {
+  available: nativePickerAvailable,
+  pick: pickFolders,
+};

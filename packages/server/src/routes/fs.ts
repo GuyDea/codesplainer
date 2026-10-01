@@ -5,7 +5,6 @@ import { fsCheckBodySchema, type FsCheckResponse } from '@codesplainer/shared';
 import type { AppContext } from '../context';
 import { browseDirectories } from '../fs/browse';
 import { checkPath } from '../fs/paths';
-import { pickFolders } from '../fs/picker';
 import { parseWith, queryFlag } from '../http/validate';
 
 const browseQuery = z.object({ path: z.string().optional(), hidden: queryFlag });
@@ -27,5 +26,5 @@ export function registerFsRoutes(app: FastifyInstance, ctx: AppContext): void {
     return { results: Object.fromEntries(checks) };
   });
 
-  app.post('/api/fs/pick-folder', async () => ({ paths: await pickFolders() }));
+  app.post('/api/fs/pick-folder', async () => ({ paths: await ctx.folderPicker.pick() }));
 }

@@ -2,7 +2,7 @@
   "name": "@codesplainer/desktop",
   "productName": "Codesplainer",
   "desktopName": "codesplainer-desktop.desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Codesplainer desktop app: the local server and its UI in one window.",
   "type": "module",

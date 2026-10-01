@@ -12,7 +12,11 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const extra = process.argv.slice(2);
 const dryRun = extra.includes('--dry-run');
-const run = (cmd, cwd = root) => execSync(cmd, { cwd, stdio: 'inherit' });
+// `npm run -s` passes a silent log level down to child npm commands, which would hide npm's
+// login/one-time password prompts and errors: publish with the default level.
+const env = { ...process.env };
+delete env.npm_config_loglevel;
+const run = (cmd, cwd = root) => execSync(cmd, { cwd, env, stdio: 'inherit' });
 const read = (cmd) => {
   try {
     return execSync(cmd, {

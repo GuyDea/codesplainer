@@ -186,14 +186,14 @@ scripts/    dev runner, doctor (environment checks), Pages build
 
 [CI](.github/workflows/ci.yml) runs `npm run check`, the format check and `npm run version:check`, and builds the CLI, the npm package, the desktop bundle and the Pages site on every push to `main` and on pull requests. Releases come from [release.yml](.github/workflows/release.yml):
 
-1. Bump the version on a clean `main`, then push the commit and the tag:
+1. On a clean `main` that is in sync with GitHub, run:
 
    ```bash
-   npm version 0.2.0          # or: npm version patch | minor | major
-   git push --follow-tags
+   npm run release-new              # patch: 0.2.0 → 0.2.1
+   npm run release-new -- minor     # or major, or an exact version like 1.0.0
    ```
 
-   The root `package.json` holds the app version. `npm version` runs [scripts/sync-version.mjs](scripts/sync-version.mjs), which copies it to every workspace package, `package-lock.json` and `APP_VERSION`, and then commits and tags `v0.2.0`. Don't edit the versions by hand; if they drift, `node scripts/sync-version.mjs` puts them back in line.
+   The root `package.json` holds the app version. The script runs `npm version`, which calls [scripts/sync-version.mjs](scripts/sync-version.mjs) to copy the version to every workspace package, `package-lock.json` and `APP_VERSION`. It then commits "Release x.y.z", tags `vx.y.z` and pushes both. Don't edit the versions by hand; if they drift, `node scripts/sync-version.mjs` puts them back in line.
 
 2. The workflow checks that the tag matches the version and that every package has it, runs `npm run check`, builds the installers on macOS, Windows and Linux, and attaches them to a draft release. Once the installers have built, it publishes the CLI to npm as `codesplainer` (with provenance).
 3. Review the draft on the Releases page and publish it. The download page links to `releases/latest/download/<file>`, so it offers the new installers as soon as the release is published.

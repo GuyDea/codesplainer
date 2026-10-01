@@ -35,7 +35,8 @@
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run lint && npm run test",
     "version": "node scripts/sync-version.mjs && git add package-lock.json packages/*/package.json packages/shared/src/version.ts",
-    "version:check": "node scripts/sync-version.mjs --check"
+    "version:check": "node scripts/sync-version.mjs --check",
+    "release-new": "node scripts/release.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -51,6 +51,29 @@ export const providerInfoSchema = z.object({
 });
 export type ProviderInfo = z.infer<typeof providerInfoSchema>;
 
+/**
+ * Per-run options a provider's CLI supports, offered in the ask bar and the provider settings.
+ * - efforts: reasoning effort levels (claude: --effort, codex: model_reasoning_effort)
+ * - fast: a faster, pricier tier (claude: fast mode, needs usage credits; codex: service_tier "fast")
+ */
+export const PROVIDER_RUN_OPTIONS: Record<
+  ProviderId,
+  { efforts: readonly string[]; fast: boolean }
+> = {
+  kiro: { efforts: [], fast: false },
+  claude: { efforts: ['low', 'medium', 'high', 'xhigh', 'max'], fast: true },
+  codex: { efforts: ['minimal', 'low', 'medium', 'high', 'xhigh'], fast: true },
+  acp: { efforts: [], fast: false },
+  mock: { efforts: [], fast: false },
+};
+
+/** A reasoning effort level as passed to the CLIs ('' = the CLI's default). */
+export const effortSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z]*$/, 'Effort must be a lowercase word.')
+  .max(20);
+
 export const PROVIDER_LABELS: Record<ProviderId, string> = {
   kiro: 'Kiro CLI',
   claude: 'Claude Code',

@@ -1,7 +1,8 @@
 /**
  * Claude Code in print mode:
  *   claude -p --output-format stream-json --verbose --tools Read,Grep,Glob --permission-mode dontAsk
- *          --strict-mcp-config [--model M] [--effort E] --append-system-prompt <system>
+ *          --strict-mcp-config [--model M] [--effort E] [--settings {"fastMode":true}]
+ *          --append-system-prompt <system>
  *          [--json-schema <schema>] [--add-dir <other folders>] [--resume <sid> [--fork-session]]
  * The prompt goes to stdin. Forks use --resume <parent> --fork-session (new session id); the repair
  * round resumes the run's own session.
@@ -38,6 +39,8 @@ import {
   firstLine,
   isObject,
   remaining,
+  runEffort,
+  runFast,
   stripAnsi,
   TtlCache,
   type FolderRef,
@@ -108,6 +111,24 @@ export function claudeToolActivity(
     default:
       return { kind: 'tool', text: `Using ${name}` };
   }
+}
+
+/** Readable reasons Claude Code reports for fast mode being off (`fast_mode_disabled_reason`). */
+const FAST_MODE_REASONS: Record<string, string> = {
+  extra_usage_disabled: 'it needs usage credits, which are turned off for this account',
+  member_level_disabled: 'usage credits are turned off for your account',
+  member_zero_credit_limit: 'usage credits are not available for your plan',
+  org_service_level_disabled: 'usage credits are turned off by your organization',
+  disabled_by_env: 'CLAUDE_CODE_DISABLE_FAST_MODE is set',
+};
+
+/** Warning when fast mode was requested but the init event says it is off; else undefined. */
+export function fastModeUnavailable(init: Record<string, unknown>): string | undefined {
+  const state = asString(init.fast_mode_state);
+  if (!state || state === 'on') return undefined;
+  const code = asString(init.fast_mode_disabled_reason);
+  const reason = code ? (FAST_MODE_REASONS[code] ?? code.replaceAll('_', ' ')) : undefined;
+  return `Fast mode is off${reason ? `: ${reason}` : ''}. This run used standard speed.`;
 }
 
 function parseAnswer(text: string): unknown {
@@ -205,7 +226,8 @@ export const createClaudeProvider: ProviderFactory = (ctx: ProviderContext) => {
     const warnings: string[] = [];
     const usage: Usage = {};
     const model = req.model && req.model !== 'default' ? req.model : undefined;
-    const effort = /^[a-z]+$/.test(ps.effort.trim()) ? ps.effort.trim() : undefined;
+    const effort = runEffort(req);
+    const fast = runFast(req);
     const systemFile = IS_WINDOWS ? await systemPromptFile(req.prompt.system) : undefined;
     let lastSession: string | undefined;
 
@@ -216,6 +238,7 @@ export const createClaudeProvider: ProviderFactory = (ctx: ProviderContext) => {
       args.push('--tools', TOOLS, '--permission-mode', 'dontAsk', '--strict-mcp-config');
       if (model) args.push('--model', model);
       if (effort) args.push('--effort', effort);
+      if (fast) args.push('--settings', JSON.stringify({ fastMode: true }));
       if (resume) {
         args.push('--resume', resume);
         if (fork) args.push('--fork-session');
@@ -254,6 +277,11 @@ export const createClaudeProvider: ProviderFactory = (ctx: ProviderContext) => {
               const m = asString(ev.model);
               if (m) usage.model = m;
               req.onActivity({ kind: 'status', text: `Claude Code started${m ? ` (${m})` : ''}` });
+              const fastOff = fast ? fastModeUnavailable(ev) : undefined;
+              if (fastOff && !warnings.includes(fastOff)) {
+                warnings.push(fastOff);
+                req.onActivity({ kind: 'warning', text: fastOff });
+              }
             }
             break;
           case 'assistant': {

@@ -2,7 +2,8 @@
  * Fake agent CLIs, written at test time as executable node scripts. Behaviour is controlled by
  * environment variables (inherited from process.env): FAKE_RECORD (JSONL file receiving every
  * invocation), FAKE_MODE (ok | invalid-then-ok | auth | crash | hang | missing-session | prose),
- * FAKE_SANDBOX=broken (codex), FAKE_PERMISSION_KIND (acp, default "edit").
+ * FAKE_SANDBOX=broken (codex), FAKE_PERMISSION_KIND (acp, default "edit"), FAKE_FAST=off (claude:
+ * fast mode requested but unavailable for the account).
  */
 import { chmod, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -59,7 +60,7 @@ ${COMMON}
 if (args[0] === '--version') { record({ args }); console.log('2.0.99 (Claude Code)'); process.exit(0); }
 if (args[0] === 'auth') { record({ args }); console.log(JSON.stringify({ loggedIn: !process.env.FAKE_LOGGED_OUT })); process.exit(0); }
 // Strict flag parsing (value-taking flags consume the next argument, --add-dir is variadic).
-const VALUE = ['--output-format', '--tools', '--permission-mode', '--model', '--effort', '--resume', '--append-system-prompt', '--append-system-prompt-file', '--json-schema', '--max-budget-usd'];
+const VALUE = ['--output-format', '--tools', '--permission-mode', '--model', '--effort', '--resume', '--append-system-prompt', '--append-system-prompt-file', '--json-schema', '--max-budget-usd', '--settings'];
 const BOOL = ['-p', '--verbose', '--strict-mcp-config', '--fork-session'];
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
@@ -78,7 +79,11 @@ readStdin((stdin) => {
   if (mode === 'crash') { process.stderr.write('boom: something broke\\n'); process.exit(3); }
   if (mode === 'missing-session' && resume && fork) { process.stderr.write('No conversation found with session ID: ' + resume + '\\n'); process.exit(1); }
   out({ type: 'system', subtype: 'hook_started' });
-  out({ type: 'system', subtype: 'init', session_id: sessionId, model: 'claude-test-model', tools: ['Read', 'Grep', 'Glob'] });
+  const fastRequested = JSON.parse(flag('--settings') || '{}').fastMode === true;
+  const fast = fastRequested && process.env.FAKE_FAST !== 'off'
+    ? { fast_mode_state: 'on' }
+    : { fast_mode_state: 'off', fast_mode_disabled_reason: fastRequested ? 'extra_usage_disabled' : undefined };
+  out({ type: 'system', subtype: 'init', session_id: sessionId, model: 'claude-test-model', tools: ['Read', 'Grep', 'Glob'], ...fast });
   if (mode === 'auth') {
     out({ type: 'result', subtype: 'success', is_error: true, result: 'Invalid API key · Please run /login', session_id: sessionId });
     process.exit(1);

@@ -121,6 +121,16 @@ describe('codex provider', () => {
     expect(info.reason).toBeUndefined();
   });
 
+  it("prefers the run's effort and fast tier over the provider settings", async () => {
+    const task = setup((s) => (s.providers.codex.effort = 'low'));
+    await newProvider().run(makeRequest(task, { effort: 'high', fast: true }));
+    const [call] = await runs();
+    const args = call?.args as string[];
+    expect(args).toContain('model_reasoning_effort="high"');
+    expect(args).not.toContain('model_reasoning_effort="low"');
+    expect(args).toContain('service_tier="fast"');
+  });
+
   it('runs codex exec read-only with schema, last-message file and activity', async () => {
     const task = setup((s) => (s.providers.codex.effort = 'low'));
     const activity: ActivityInput[] = [];
@@ -134,6 +144,7 @@ describe('codex provider', () => {
     expect(args[args.indexOf('-C') + 1]).toBe(project);
     expect(args[args.indexOf('-m') + 1]).toBe('gpt-test');
     expect(args).toContain('model_reasoning_effort="low"');
+    expect(args).not.toContain('service_tier="fast"');
     expect(args).toContain('mcp_servers.jira.enabled=false');
     expect(args).not.toContain('mcp_servers.off.enabled=false');
     expect(args[args.length - 1]).toBe('-');

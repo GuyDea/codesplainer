@@ -38,6 +38,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   delete process.env.FAKE_MODE;
+  delete process.env.FAKE_FAST;
   await removeDir(fakes.record);
 });
 
@@ -123,6 +124,8 @@ describe('claude provider', () => {
     expect(args[args.indexOf('--append-system-prompt') + 1]).toBe(req.prompt.system);
     expect(JSON.parse(args[args.indexOf('--json-schema') + 1] as string)).toEqual(req.outputSchema);
     expect(args).not.toContain('--resume');
+    expect(args).not.toContain('--settings');
+    expect(res.warnings).toEqual([]);
     expect(call?.stdin).toBe(`${req.prompt.user}${DELIVER}`);
     expect(call?.cwd).toBe(project);
     const texts = activity.map((a) => a.text);
@@ -131,6 +134,31 @@ describe('claude provider', () => {
     expect(
       activity.some((a) => a.kind === 'thinking' && a.text === 'Looking at the entry point'),
     ).toBe(true);
+  });
+
+  it("prefers the run's effort and fast mode over the provider settings", async () => {
+    const task = setup((s) => {
+      s.providers.claude.effort = 'low';
+    });
+    const res = await provider.run(makeRequest(task, { effort: 'max', fast: true }));
+    const [call] = await runs();
+    const args = call?.args as string[];
+    expect(args[args.indexOf('--effort') + 1]).toBe('max');
+    expect(JSON.parse(args[args.indexOf('--settings') + 1] as string)).toEqual({ fastMode: true });
+    expect(res.warnings).toEqual([]);
+  });
+
+  it('warns when fast mode is off for the account', async () => {
+    process.env.FAKE_FAST = 'off';
+    const task = setup((s) => {
+      s.providers.claude.fast = true;
+    });
+    const activity: ActivityInput[] = [];
+    const res = await provider.run(makeRequest(task, { activity }));
+    const warning =
+      'Fast mode is off: it needs usage credits, which are turned off for this account. This run used standard speed.';
+    expect(res.warnings).toEqual([warning]);
+    expect(activity).toContainEqual({ kind: 'warning', text: warning });
   });
 
   it('forks the parent session and sends the compact prompt', async () => {

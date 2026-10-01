@@ -17,6 +17,7 @@ import {
   isPending,
   normalizeGraphSpec,
   parentIdOf,
+  PROVIDER_RUN_OPTIONS,
   squish,
   truncate,
   type ActivityItem,
@@ -77,6 +78,8 @@ export interface AskInput {
   provider?: ProviderId;
   model?: string;
   detail?: GraphEntry['detail'];
+  effort?: string;
+  fast?: boolean;
 }
 
 /** A failure with a user-facing message (plus whatever the agent produced before failing). */
@@ -231,6 +234,7 @@ export class GenerationService {
     // prepare() may have awaited the file system: make sure nothing was deleted meanwhile.
     if (this.deps.conversations.get(conv.id) !== conv) throw notFound('Conversation');
     const model = input.model?.trim() ?? '';
+    const effort = input.effort?.trim() ?? '';
     const entry: GraphEntry = {
       id: newId(),
       origin,
@@ -238,6 +242,8 @@ export class GenerationService {
       status: 'queued',
       provider: input.provider ?? settings.defaultProvider,
       ...(model ? { model } : {}),
+      ...(effort ? { effort } : {}),
+      ...(input.fast !== undefined ? { fast: input.fast } : {}),
       detail: input.detail ?? settings.detail,
       warnings: [],
       createdAt: nowIso(),
@@ -268,14 +274,23 @@ export class GenerationService {
     entry.warnings = [];
     entry.activity = [];
     if (body.provider && body.provider !== entry.provider) {
+      // Models and run options are provider-specific.
       entry.provider = body.provider;
       delete entry.model;
+      delete entry.effort;
+      delete entry.fast;
     }
     if (body.model !== undefined) {
       const model = body.model.trim();
       if (model) entry.model = model;
       else delete entry.model;
     }
+    if (body.effort !== undefined) {
+      const effort = body.effort.trim();
+      if (effort) entry.effort = effort;
+      else delete entry.effort;
+    }
+    if (body.fast !== undefined) entry.fast = body.fast;
     if (body.detail) entry.detail = body.detail;
     // The raw answer of the previous attempt is stale (deletes are ordered before later saves).
     void this.deps.runs.delete(graphId).catch(() => undefined);
@@ -558,7 +573,16 @@ export class GenerationService {
       }
       const providerSettings = settings.providers[entry.provider];
       const model = entry.model || providerSettings.model || undefined;
-      onActivity({ kind: 'status', text: `Starting ${info.name}${model ? ` (${model})` : ''}` });
+      const { efforts, fast: fastSupported } = PROVIDER_RUN_OPTIONS[entry.provider];
+      const effort = efforts.length
+        ? entry.effort || providerSettings.effort || undefined
+        : undefined;
+      const fast = fastSupported && (entry.fast ?? providerSettings.fast);
+      const options = [model, effort && `${effort} effort`, fast && 'fast'].filter(Boolean);
+      onActivity({
+        kind: 'status',
+        text: `Starting ${info.name}${options.length ? ` (${options.join(', ')})` : ''}`,
+      });
       const task = await this.buildTask(conv, entry, workspace, settings);
       if (!current()) return;
       const parentSession = task.parent?.session;
@@ -576,6 +600,8 @@ export class GenerationService {
         outputSchema: GRAPH_OUTPUT_SCHEMA,
         folders: workspace.folders.map((f) => ({ alias: f.alias, path: f.path })),
         ...(model ? { model } : {}),
+        ...(effort ? { effort } : {}),
+        fast,
         providerSettings,
         settings,
         ...(forkSessionId ? { forkSessionId } : {}),

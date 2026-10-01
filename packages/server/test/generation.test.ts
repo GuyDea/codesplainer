@@ -546,6 +546,59 @@ describe('generation', () => {
     expect(lastRequest(codex).task.graph.id).toBe(explicit.id);
   });
 
+  it('picks effort and fast mode from the request or the provider settings', async () => {
+    const conv = await newConversation();
+    const explicit = await done(conv.id, {
+      question: 'x',
+      origin: { type: 'question' },
+      provider: 'claude',
+      effort: 'max',
+      fast: true,
+    });
+    expect(explicit).toMatchObject({ effort: 'max', fast: true });
+    expect(lastRequest(claude)).toMatchObject({ effort: 'max', fast: true });
+
+    await call(server, 'PUT', '/api/settings', {
+      providers: { claude: { effort: 'low', fast: true } },
+    });
+    const defaults = await done(conv.id, {
+      question: 'y',
+      origin: { type: 'question' },
+      provider: 'claude',
+    });
+    expect(defaults.effort).toBeUndefined();
+    expect(defaults.fast).toBeUndefined();
+    expect(lastRequest(claude)).toMatchObject({ effort: 'low', fast: true });
+
+    // A retry keeps the diagram's options; another provider starts from its own settings.
+    await call(server, 'POST', `/api/conversations/${conv.id}/graphs/${explicit.id}/retry`, {
+      fast: false,
+    });
+    await waitForGraph(server, conv.id, explicit.id, (g) => g.attempt === 2 && g.status === 'done');
+    expect(lastRequest(claude)).toMatchObject({ effort: 'max', fast: false });
+    await call(server, 'POST', `/api/conversations/${conv.id}/graphs/${explicit.id}/retry`, {
+      provider: 'codex',
+    });
+    const switched = await waitForGraph(
+      server,
+      conv.id,
+      explicit.id,
+      (g) => g.attempt === 3 && g.status === 'done',
+    );
+    expect(switched.effort).toBeUndefined();
+    expect(switched.fast).toBeUndefined();
+    expect(lastRequest(codex)).toMatchObject({ fast: false });
+    expect(lastRequest(codex).effort).toBeUndefined();
+
+    // Effort is a CLI argument: anything but a lowercase word is refused.
+    const bad = await call(server, 'POST', `/api/conversations/${conv.id}/ask`, {
+      question: 'z',
+      origin: { type: 'question' },
+      effort: 'high --danger',
+    });
+    expect(bad.status).toBe(400);
+  });
+
   it('passes the selected code to ask-code prompts', async () => {
     const conv = await newConversation();
     await done(conv.id, {

@@ -1,7 +1,8 @@
 /**
  * OpenAI Codex CLI:
  *   codex exec --json -s read-only --skip-git-repo-check -C <folder> --output-schema <file>
- *              -o <last message file> [-m M] [-c model_reasoning_effort="E"] -
+ *              -o <last message file> [-m M] [-c model_reasoning_effort="E"]
+ *              [-c service_tier="fast"] -
  * Forks: `codex exec fork <thread> -`, repair: `codex exec resume <thread> -` (both take the sandbox
  * via -c sandbox_mode=... and the working dir from the process cwd).
  *
@@ -40,6 +41,8 @@ import {
   firstLine,
   isObject,
   remaining,
+  runEffort,
+  runFast,
   shortenPaths,
   stripAnsi,
   TtlCache,
@@ -305,7 +308,8 @@ export const createCodexProvider: ProviderFactory = (ctx: ProviderContext) => {
     const sandbox = ps.unsafeNoSandbox ? 'danger-full-access' : 'read-only';
     const home = codexHome(ctx.homeDir);
     const model = req.model && req.model !== 'default' ? req.model : undefined;
-    const effort = /^[a-z]+$/.test(ps.effort.trim()) ? ps.effort.trim() : undefined;
+    const effort = runEffort(req);
+    const fast = runFast(req);
     const started = Date.now();
     const deadline = started + req.timeoutMs;
     const warnings: string[] = [];
@@ -333,6 +337,7 @@ export const createCodexProvider: ProviderFactory = (ctx: ProviderContext) => {
       common.push('-o', lastFile);
       if (model) common.push('-m', model);
       if (effort) common.push('-c', `model_reasoning_effort="${effort}"`);
+      if (fast) common.push('-c', 'service_tier="fast"');
       for (const name of info.mcpServers)
         common.push('-c', `mcp_servers.${tomlKey(name)}.enabled=false`);
       if (mode === 'exec')

@@ -34,6 +34,16 @@ describe('settings', () => {
     expect(merged.providers.claude).toMatchObject({ model: 'opus', effort: 'high' });
   });
 
+  it('keeps run options safe to pass to a CLI', () => {
+    expect(defaultSettings().providers.claude).toMatchObject({ effort: '', fast: false });
+    // A hand-edited settings file with a bad effort still loads, with the CLI default.
+    const loaded = settingsSchema.parse({ providers: { claude: { effort: 'High!' } } });
+    expect(loaded.providers.claude.effort).toBe('');
+    expect(settingsPatchSchema.safeParse({ providers: { codex: { effort: 'x y' } } }).success).toBe(
+      false,
+    );
+  });
+
   it('merges patches one level deep', () => {
     const merged = mergeSettings(defaultSettings(), {
       detail: 'simple',

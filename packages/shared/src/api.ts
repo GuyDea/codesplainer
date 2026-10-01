@@ -56,7 +56,7 @@ export const DEFAULT_PORT = 4777;
 import { z } from 'zod';
 import { graphOriginSchema, type Conversation, type GraphEntry } from './conversation';
 import { DETAIL_LEVELS } from './kinds';
-import { providerIdSchema, type ProviderInfo } from './providers';
+import { effortSchema, providerIdSchema, type ProviderInfo } from './providers';
 import type { Workspace } from './workspace';
 
 export const apiErrorSchema = z.object({
@@ -147,6 +147,10 @@ export const askBodySchema = z.object({
   provider: providerIdSchema.optional(),
   model: z.string().optional(),
   detail: z.enum(DETAIL_LEVELS).optional(),
+  /** Reasoning effort for this run ('' or absent = the provider setting). */
+  effort: effortSchema.optional(),
+  /** Fast tier for this run (absent = the provider setting). */
+  fast: z.boolean().optional(),
 });
 export type AskBody = z.input<typeof askBodySchema>;
 
@@ -154,6 +158,8 @@ export const retryBodySchema = z.object({
   provider: providerIdSchema.optional(),
   model: z.string().optional(),
   detail: z.enum(DETAIL_LEVELS).optional(),
+  effort: effortSchema.optional(),
+  fast: z.boolean().optional(),
   /** Do not fork the parent's agent session (fresh exploration). */
   fresh: z.boolean().optional(),
 });

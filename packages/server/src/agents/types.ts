@@ -69,6 +69,9 @@ export interface AgentRunRequest {
   folders: { alias: string; path: string }[];
   /** Resolved model: graph.model || providerSettings.model || undefined (CLI default). */
   model?: string;
+  /** Reasoning effort / fast tier for this run; absent = providerSettings.effort / .fast. */
+  effort?: string;
+  fast?: boolean;
   providerSettings: ProviderSettings;
   settings: Settings;
   /** Fork this previous agent session of the same provider (already checked by the caller). */

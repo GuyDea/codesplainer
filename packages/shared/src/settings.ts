@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DETAIL_LEVELS } from './kinds';
-import { PROVIDER_IDS } from './providers';
+import { effortSchema, PROVIDER_IDS } from './providers';
 
 /**
  * NOTE (zod 4): nested object defaults use `.prefault({})` so inner defaults are applied when the
@@ -20,7 +20,9 @@ export const providerSettingsSchema = z.object({
   /** Use the CLI's JSON-schema enforcement for the final answer when supported. */
   structuredOutput: z.boolean().default(true),
   /** Reasoning effort hint (claude: --effort, codex: model_reasoning_effort). Empty = default. */
-  effort: z.string().default(''),
+  effort: effortSchema.catch('').default(''),
+  /** Use the provider's fast tier by default (see PROVIDER_RUN_OPTIONS). */
+  fast: z.boolean().default(false),
   /**
    * Codex only: run without the OS sandbox. Needed on Linux hosts where bubblewrap cannot start.
    * The agent is still instructed to stay read-only, but nothing enforces it.
@@ -83,7 +85,8 @@ const providerSettingsPatchSchema = z.object({
   extraArgs: z.array(z.string()).optional(),
   reuseSessions: z.boolean().optional(),
   structuredOutput: z.boolean().optional(),
-  effort: z.string().optional(),
+  effort: effortSchema.optional(),
+  fast: z.boolean().optional(),
   unsafeNoSandbox: z.boolean().optional(),
 });
 

@@ -87,6 +87,9 @@ export const graphEntrySchema = z.object({
   provider: providerIdSchema,
   model: z.string().optional(),
   detail: z.enum(DETAIL_LEVELS),
+  /** Reasoning effort / fast tier chosen for this diagram (absent = the provider setting). */
+  effort: z.string().optional(),
+  fast: z.boolean().optional(),
   spec: graphSpecSchema.optional(),
   error: z.string().optional(),
   warnings: z.array(z.string()).default([]),

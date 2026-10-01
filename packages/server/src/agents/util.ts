@@ -2,7 +2,12 @@
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 import { toPosixPath } from '@codesplainer/shared';
-import { AgentError, type AgentErrorCode, type AgentRunResult } from './types';
+import {
+  AgentError,
+  type AgentErrorCode,
+  type AgentRunRequest,
+  type AgentRunResult,
+} from './types';
 
 export interface FolderRef {
   alias: string;
@@ -147,6 +152,19 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     };
     signal?.addEventListener('abort', onAbort, { once: true });
   });
+}
+
+type RunOptions = Pick<AgentRunRequest, 'effort' | 'fast' | 'providerSettings'>;
+
+/** Reasoning effort of a run: the request's, else the provider setting; undefined = CLI default. */
+export function runEffort(req: RunOptions): string | undefined {
+  const value = (req.effort || req.providerSettings.effort).trim();
+  return /^[a-z]+$/.test(value) ? value : undefined;
+}
+
+/** Whether a run uses the provider's fast tier: the request's choice, else the provider setting. */
+export function runFast(req: RunOptions): boolean {
+  return req.fast ?? req.providerSettings.fast;
 }
 
 /** Remaining milliseconds until a deadline (at least 1). */

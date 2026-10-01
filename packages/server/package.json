@@ -1,6 +1,6 @@
 {
   "name": "@codesplainer/server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Codesplainer local server: workspaces, conversations, file access and agent CLI orchestration.",
   "type": "module",

@@ -2,9 +2,8 @@ name: Release
 
 # Push a tag like v0.2.0 (it must match the app version) to build the desktop app for macOS,
 # Windows and Linux and attach the installers to a draft GitHub release; publish it by hand.
-# The same tag publishes the CLI to npm (`npx codesplainer`) once the installers have built.
-# "Run workflow" builds the installers without a release (kept as workflow artifacts) and does
-# an `npm publish --dry-run`.
+# "Run workflow" builds the installers without a release (kept as workflow artifacts).
+# The npm package is published from a terminal: `npm run publish:npm` (see README).
 on:
   push:
     tags: ['v*']
@@ -104,36 +103,3 @@ jobs:
             --draft \
             --title "Codesplainer $GITHUB_REF_NAME" \
             --generate-notes
-
-  npm:
-    # After the installers, so a failed build leaves npm untouched (a published version is final).
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      # npm trusted publishing (OIDC) and provenance.
-      id-token: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-          registry-url: https://registry.npmjs.org
-      # Trusted publishing needs npm >= 11.5.1.
-      - run: npm install -g npm@11
-      - run: npm ci
-      - name: Build the npm package
-        run: npm run pack:npm
-      - name: Publish to npm
-        working-directory: npm-dist
-        env:
-          # Only needed until a trusted publisher is configured on npmjs.com (see README).
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            npm publish --access public --provenance
-          else
-            npm publish --access public --dry-run
-          fi

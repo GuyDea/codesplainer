@@ -58,6 +58,8 @@ npx codesplainer                    # http://127.0.0.1:4777
 npx codesplainer ~/code/my-repo     # open a folder directly (creates a workspace for it)
 ```
 
+The UI opens in its own window (Electron, like the desktop app). The first start downloads Electron, about 100 MB, which is reused afterwards. If Electron can't be downloaded or started, Codesplainer says why and opens the browser instead; `--browser` always uses the browser. Closing the window stops Codesplainer, and so does Ctrl+C in the terminal.
+
 It takes the same options as the source build below. To keep the `codesplainer` command around, run `npm install -g codesplainer`.
 
 ### From source
@@ -71,7 +73,7 @@ npm start                       # http://127.0.0.1:4777
 npm start -- ~/code/my-repo     # open a folder directly (creates a workspace for it)
 ```
 
-Options: `--port <n>`, `--host <host>`, `--data-dir <dir>`, `--no-open` (env: `CODESPLAINER_PORT`, `CODESPLAINER_HOST`, `CODESPLAINER_HOME`, `CODESPLAINER_NO_OPEN=1`). Settings and conversations live in `~/.codesplainer`.
+Options: `--port <n>`, `--host <host>`, `--data-dir <dir>`, `--browser` (the browser instead of a window), `--no-open` (env: `CODESPLAINER_PORT`, `CODESPLAINER_HOST`, `CODESPLAINER_HOME`, `CODESPLAINER_BROWSER=1`, `CODESPLAINER_NO_OPEN=1`). Settings and conversations live in `~/.codesplainer`.
 
 ### Development
 

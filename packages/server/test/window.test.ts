@@ -117,10 +117,7 @@ describe('openAppWindow', () => {
           );
         },
       }),
-    ).toEqual({
-      ok: false,
-      reason: 'Electron failed to install correctly, please delete node_modules/electron',
-    });
+    ).toEqual({ ok: false, reason: 'Electron could not be downloaded' });
     expect(await open('ok', { scripts: [join(dir, 'missing.js')] })).toEqual({
       ok: false,
       reason: 'the window script is not built',

@@ -1,8 +1,8 @@
 /**
  * Assembles the `codesplainer` npm package (the CLI, run with `npx codesplainer`) in npm-dist/.
  * Run `npm run build` first: the package is the server bundle with the web UI in dist/public,
- * plus the app window script from the desktop build (electron is an optional dependency: without
- * it, or when its download fails, the CLI opens the browser).
+ * plus the app window script from the desktop build. electron is an optional dependency: it
+ * downloads its binary on first use, and without it the CLI opens the browser.
  * The manifest is generated from packages/server/package.json, without the workspace-only
  * packages (@codesplainer/shared is bundled into dist/index.js by tsup).
  */

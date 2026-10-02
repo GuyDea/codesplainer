@@ -1,9 +1,9 @@
 /**
  * The CLI's app window: starts Electron with the desktop package's window script
  * (packages/desktop/src/cli-window.ts), which shows the UI of this server in its own window. The
- * server stays in this process. Electron comes from the npm package's optional dependency, or
- * from the monorepo's node_modules; without it (or when it cannot start) the caller falls back to
- * the browser.
+ * server stays in this process. Electron comes from the npm package's optional dependency (it
+ * downloads its ~100 MB binary on first use), or from the monorepo's node_modules; without it, or
+ * when it cannot be downloaded or started, the caller falls back to the browser.
  */
 import { spawn as nodeSpawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -61,13 +61,14 @@ export async function openAppWindow(
   try {
     electron = (options.resolveElectron ?? defaultElectron)();
   } catch (e) {
-    const missing = (e as NodeJS.ErrnoException).code === 'MODULE_NOT_FOUND';
-    return {
-      ok: false,
-      reason: missing
-        ? 'Electron is not installed'
-        : (lastLine(String((e as Error).message)) ?? 'Electron is unusable'),
-    };
+    const message = String((e as Error).message);
+    let reason = lastLine(message) ?? 'Electron is unusable';
+    if ((e as NodeJS.ErrnoException).code === 'MODULE_NOT_FOUND')
+      reason = 'Electron is not installed';
+    // The electron package downloads its binary on first use; its error suggests deleting
+    // node_modules/electron, which means little to someone running npx.
+    else if (/failed to install/i.test(message)) reason = 'Electron could not be downloaded';
+    return { ok: false, reason };
   }
   const script = (options.scripts ?? DEFAULT_SCRIPTS).find((p) => existsSync(p));
   if (!script) return { ok: false, reason: 'the window script is not built' };

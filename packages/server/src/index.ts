@@ -12,6 +12,7 @@ import { isHttpError } from './errors';
 import { acquireInstanceLock, type InstanceInfo } from './instance';
 import { consoleLogger } from './log';
 import { portIsFree, serverUrl, urlHost } from './net';
+import { openAppWindow, type AppWindow } from './window';
 
 const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
 const paint = (code: number) => (text: string) =>
@@ -115,9 +116,11 @@ async function main(): Promise<void> {
     throw e;
   }
   let stopping = false;
+  let appWindow: AppWindow | undefined;
   const stop = (code: number) => {
     if (stopping) return;
     stopping = true;
+    appWindow?.close();
     const force = setTimeout(() => process.exit(code || 1), 10_000);
     force.unref();
     void server
@@ -183,6 +186,22 @@ async function main(): Promise<void> {
   }
   await printProviders(server);
   if (config.open && !stopping) {
+    const opened = config.browser ? undefined : await openAppWindow(target);
+    if (opened?.ok) {
+      appWindow = opened.window;
+      void appWindow.closed.then(() => {
+        if (stopping) return;
+        console.log(dim('  Window closed, shutting down…'));
+        stop(0);
+      });
+      console.log(dim('  Close the window or press Ctrl+C to stop.\n'));
+      return;
+    }
+    if (opened) {
+      console.log(
+        `  ${yellow('No app window')} ${dim(`(${opened.reason}): opening the browser instead.`)}`,
+      );
+    }
     try {
       await open(target);
     } catch {

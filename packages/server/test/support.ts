@@ -60,6 +60,7 @@ export function makeConfig(dataDir: string, patch: Partial<ServerConfig> = {}): 
     port: 0,
     dataDir,
     open: false,
+    browser: false,
     folders: [],
     cwd: dataDir,
     warnings: [],

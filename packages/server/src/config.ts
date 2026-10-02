@@ -19,8 +19,10 @@ export interface ServerConfig {
   port: number;
   /** Absolute data directory (settings, workspaces, conversations, raw agent outputs). */
   dataDir: string;
-  /** Open the browser after start. */
+  /** Open the UI after start: in an app window (Electron) when possible, else the browser. */
   open: boolean;
+  /** Open the UI in the browser even when an app window is possible. */
+  browser: boolean;
   /** Folders given on the command line (absolute, not yet validated). */
   folders: string[];
   /** Built web UI directory (contains index.html), when available. */
@@ -55,7 +57,9 @@ Options:
   --port <n>         Port to listen on (default ${DEFAULT_PORT}, env CODESPLAINER_PORT)
   --host <host>      Interface to bind (default ${DEFAULT_HOST}, env CODESPLAINER_HOST)
   --data-dir <dir>   Settings and conversations (default ~/.codesplainer, env CODESPLAINER_HOME)
-  --no-open          Do not open the browser (env CODESPLAINER_NO_OPEN=1)
+  --browser          Open the UI in the browser instead of an app window
+                     (env CODESPLAINER_BROWSER=1)
+  --no-open          Open neither (env CODESPLAINER_NO_OPEN=1)
   -h, --help         Show this help
   -v, --version      Print the version
 `;
@@ -113,6 +117,7 @@ export function resolveConfig(
   let host: string | undefined;
   let dataDir: string | undefined;
   let noOpen = false;
+  let browser = false;
   const folders: string[] = [];
 
   for (let i = 0; i < argv.length; i++) {
@@ -144,6 +149,9 @@ export function resolveConfig(
         return { action: 'version', text: `${APP_VERSION}\n` };
       case '--no-open':
         noOpen = true;
+        break;
+      case '--browser':
+        browser = true;
         break;
       case '-p':
       case '--port': {
@@ -199,6 +207,7 @@ export function resolveConfig(
       port: port ?? DEFAULT_PORT,
       dataDir: resolvePath(dataDir),
       open: !noOpen && !truthy(env.CODESPLAINER_NO_OPEN),
+      browser: browser || truthy(env.CODESPLAINER_BROWSER),
       folders: folders.map(resolvePath),
       webDist: findWebDist(env, opts.webDistCandidates ?? defaultWebDistCandidates(), cwd),
       cwd,

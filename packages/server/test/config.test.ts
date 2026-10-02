@@ -29,6 +29,7 @@ describe('resolveConfig', () => {
       port: DEFAULT_PORT,
       dataDir: '/home/me/.codesplainer',
       open: true,
+      browser: false,
       folders: [],
       cwd: '/work/project',
       warnings: [],
@@ -52,6 +53,7 @@ describe('resolveConfig', () => {
     expect(config.host).toBe('localhost');
     expect(config.dataDir).toBe('/home/me/data');
     expect(config.open).toBe(false);
+    expect(run(['--browser']).browser).toBe(true);
     expect(config.folders).toEqual(['/work/project', '/work/other', '/home/me/code/x']);
     expect(run(['--port=0']).port).toBe(0);
     expect(run(['--', '--weird-folder']).folders).toEqual(['/work/project/--weird-folder']);
@@ -63,12 +65,14 @@ describe('resolveConfig', () => {
       CODESPLAINER_HOST: '::1',
       CODESPLAINER_HOME: '/var/cs',
       CODESPLAINER_NO_OPEN: '1',
+      CODESPLAINER_BROWSER: 'yes',
     };
     expect(run([], env)).toMatchObject({
       port: 4800,
       host: '::1',
       dataDir: '/var/cs',
       open: false,
+      browser: true,
     });
     expect(run(['--port', '4900', '--data-dir', 'rel/data'], env)).toMatchObject({
       port: 4900,

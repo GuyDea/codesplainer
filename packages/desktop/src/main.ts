@@ -5,16 +5,7 @@
  * shows that server instead of starting a second one.
  */
 import { homedir } from 'node:os';
-import {
-  BrowserWindow,
-  Menu,
-  app,
-  dialog,
-  nativeTheme,
-  shell,
-  type MenuItemConstructorOptions,
-  type OpenDialogOptions,
-} from 'electron';
+import { BrowserWindow, Menu, app, dialog, type OpenDialogOptions } from 'electron';
 import {
   DEFAULT_HOST,
   consoleLogger,
@@ -25,10 +16,9 @@ import {
   type FolderPicker,
 } from '@codesplainer/server/start';
 import { applyLoginShellPath, stripAppImageEnv } from './shell-env';
+import { APP_NAME, buildAppMenu, createAppWindow } from './window';
 
-const APP_NAME = 'Codesplainer';
 const APP_ID = 'io.github.guydea.codesplainer';
-const REPO_URL = 'https://github.com/GuyDea/codesplainer';
 /** How long to wait for another instance that is still starting up or shutting down. */
 const ATTACH_TIMEOUT_MS = 8_000;
 /** Graceful shutdown limit (running diagrams are cancelled, agents stopped, data saved). */
@@ -122,60 +112,11 @@ async function startOrAttach(): Promise<string> {
 
 // ---- window ---------------------------------------------------------------------------------
 
-function originOf(url: string): string | undefined {
-  try {
-    return new URL(url).origin;
-  } catch {
-    return undefined;
-  }
-}
-
-function openExternal(url: string): void {
-  if (/^(https?:|mailto:)/i.test(url)) void shell.openExternal(url);
-}
-
-function createWindow(url: string): BrowserWindow {
-  const win = new BrowserWindow({
-    width: 1440,
-    height: 920,
-    minWidth: 880,
-    minHeight: 560,
-    title: APP_NAME,
-    show: false,
-    // The app's --bg, so there is no white flash before the UI paints.
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#0c1016' : '#f5f6f8',
-    autoHideMenuBar: true,
-    webPreferences: {
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-      spellcheck: false,
-    },
-  });
-  const origin = originOf(url);
-  // The window only ever shows the app; other links open in the default browser.
-  win.webContents.setWindowOpenHandler(({ url: target }) => {
-    openExternal(target);
-    return { action: 'deny' };
-  });
-  win.webContents.on('will-navigate', (event) => {
-    if (originOf(event.url) === origin) return;
-    event.preventDefault();
-    openExternal(event.url);
-  });
-  let shown = false;
-  const show = () => {
-    if (shown || win.isDestroyed()) return;
-    shown = true;
-    win.show();
-  };
-  win.once('ready-to-show', show);
-  // Never stay invisible, e.g. when the page fails to load.
-  setTimeout(show, 3_000);
+function openWindow(url: string): BrowserWindow {
+  const win = createAppWindow(url);
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null;
   });
-  void win.loadURL(url);
   return win;
 }
 
@@ -184,29 +125,8 @@ function showWindow(): void {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   } else if (uiUrl) {
-    mainWindow = createWindow(uiUrl);
+    mainWindow = openWindow(uiUrl);
   }
-}
-
-function buildMenu(): Menu {
-  const template: MenuItemConstructorOptions[] = [
-    ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
-    { role: 'fileMenu' },
-    { role: 'editMenu' },
-    { role: 'viewMenu' },
-    { role: 'windowMenu' },
-    {
-      role: 'help',
-      submenu: [
-        { label: `${APP_NAME} on GitHub`, click: () => void shell.openExternal(REPO_URL) },
-        {
-          label: 'Report a Problem',
-          click: () => void shell.openExternal(`${REPO_URL}/issues`),
-        },
-      ],
-    },
-  ];
-  return Menu.buildFromTemplate(template);
 }
 
 // ---- lifecycle ------------------------------------------------------------------------------
@@ -216,7 +136,7 @@ async function main(): Promise<void> {
   // environment on to every program it starts.
   stripAppImageEnv();
   await Promise.all([app.whenReady(), applyLoginShellPath()]);
-  Menu.setApplicationMenu(buildMenu());
+  Menu.setApplicationMenu(buildAppMenu());
   try {
     uiUrl = await startOrAttach();
   } catch (e) {
@@ -224,7 +144,7 @@ async function main(): Promise<void> {
     app.exit(1);
     return;
   }
-  mainWindow = createWindow(uiUrl);
+  mainWindow = openWindow(uiUrl);
 }
 
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);

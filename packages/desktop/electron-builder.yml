@@ -12,6 +12,9 @@ directories:
 files:
   - dist/**/*
   - '!dist/**/*.map'
+  # The CLI's app window (shipped in the npm package), not part of the desktop app.
+  - '!dist/cli-window.js'
+  - '!dist/icon.png'
   - package.json
 asar: true
 npmRebuild: false

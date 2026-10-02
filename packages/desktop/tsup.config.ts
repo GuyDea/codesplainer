@@ -5,6 +5,7 @@ import { defineConfig } from 'tsup';
 
 const webDist = fileURLToPath(new URL('../web/dist', import.meta.url));
 const publicDir = fileURLToPath(new URL('./dist/public', import.meta.url));
+const icon = fileURLToPath(new URL('./build/icon.png', import.meta.url));
 
 /**
  * One self-contained ESM bundle for the Electron main process: the server, the shared package and
@@ -12,7 +13,8 @@ const publicDir = fileURLToPath(new URL('./dist/public', import.meta.url));
  * `electron` stays external (it is provided by the runtime).
  */
 export default defineConfig({
-  entry: { main: 'src/main.ts' },
+  // main: the desktop app; cli-window: the CLI's app window (see src/cli-window.ts).
+  entry: { main: 'src/main.ts', 'cli-window': 'src/cli-window.ts' },
   format: ['esm'],
   platform: 'node',
   target: 'node22',
@@ -37,5 +39,7 @@ export default defineConfig({
     }
     await rm(publicDir, { recursive: true, force: true });
     await cp(webDist, publicDir, { recursive: true });
+    // The CLI's app window uses it as the window/dock icon (the app gets its own from build/).
+    await cp(icon, fileURLToPath(new URL('./dist/icon.png', import.meta.url)));
   },
 });

@@ -1,6 +1,8 @@
 /**
  * Assembles the `codesplainer` npm package (the CLI, run with `npx codesplainer`) in npm-dist/.
- * Run `npm run build` first: the package is the server bundle with the web UI in dist/public.
+ * Run `npm run build` first: the package is the server bundle with the web UI in dist/public,
+ * plus the app window script from the desktop build (electron is an optional dependency: without
+ * it, or when its download fails, the CLI opens the browser).
  * The manifest is generated from packages/server/package.json, without the workspace-only
  * packages (@codesplainer/shared is bundled into dist/index.js by tsup).
  */
@@ -10,15 +12,21 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const serverDir = `${root}packages/server/`;
+const desktopDir = `${root}packages/desktop/`;
 const outDir = `${root}npm-dist/`;
 
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 const rootPkg = await readJson(`${root}package.json`);
 const serverPkg = await readJson(`${serverDir}package.json`);
+const desktopPkg = await readJson(`${desktopDir}package.json`);
 const { version } = rootPkg;
 
 if (!existsSync(`${serverDir}dist/index.js`) || !existsSync(`${serverDir}dist/public/index.html`)) {
   console.error('packages/server/dist is missing or has no UI: run `npm run build` first.');
+  process.exit(1);
+}
+if (!existsSync(`${desktopDir}dist/cli-window.js`)) {
+  console.error('packages/desktop/dist/cli-window.js is missing: run `npm run build` first.');
   process.exit(1);
 }
 
@@ -40,11 +48,15 @@ const manifest = {
   files: ['dist', '!**/*.map'],
   engines: rootPkg.engines,
   dependencies,
+  optionalDependencies: { electron: desktopPkg.devDependencies.electron },
 };
 
 await rm(outDir, { recursive: true, force: true });
 await mkdir(outDir, { recursive: true });
 await cp(`${serverDir}dist`, `${outDir}dist`, { recursive: true });
+for (const file of ['cli-window.js', 'icon.png']) {
+  await cp(`${desktopDir}dist/${file}`, `${outDir}dist/${file}`);
+}
 await cp(`${root}README.md`, `${outDir}README.md`);
 await writeFile(`${outDir}package.json`, `${JSON.stringify(manifest, null, 2)}\n`);
 
